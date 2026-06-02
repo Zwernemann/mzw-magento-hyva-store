@@ -360,6 +360,7 @@ return [
         'Magento_Wishlist' => 1,
         'Magento_WishlistAnalytics' => 1,
         'Magento_WishlistGraphQl' => 1,
+        'Demo_Catalog' => 1,
         'Hyva_Theme' => 1,
         'Hyva_CompatModuleFallback' => 1,
         'Hyva_Email' => 1,
@@ -382,7 +383,7 @@ return [
         'default' => [
             'design' => [
                 'theme' => [
-                    'theme_id' => 'Hyva/default'
+                    'theme_id' => 'Demo/default'
                 ]
             ]
         ]
