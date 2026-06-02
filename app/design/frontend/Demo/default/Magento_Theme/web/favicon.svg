@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52"
+     fill="none" role="img" aria-label="Lacke & Elektro Demo AG">
+    <defs>
+        <linearGradient id="demoFaviconBg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#1d4ed8"/>
+            <stop offset="1" stop-color="#0f172a"/>
+        </linearGradient>
+    </defs>
+    <!-- badge -->
+    <rect x="1" y="1" width="50" height="50" rx="13" fill="url(#demoFaviconBg)"/>
+    <rect x="1.5" y="1.5" width="49" height="49" rx="12.5" stroke="#ffffff" stroke-opacity="0.12"/>
+    <!-- lightning bolt (Elektro) -->
+    <path d="M33 9 L25.5 23 H30 L27 35 L38 19.5 H32.5 L36 9 Z" fill="#facc15" fill-opacity="0.9"/>
+    <!-- monogram L&E -->
+    <text x="26" y="32" text-anchor="middle"
+          font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800"
+          letter-spacing="-0.5">
+        <tspan fill="#ffffff">L</tspan><tspan fill="#f59e0b">&amp;</tspan><tspan fill="#ffffff">E</tspan>
+    </text>
+    <!-- paint stroke (Lacke) -->
+    <rect x="12" y="39" width="28" height="4" rx="2" fill="#f59e0b"/>
+    <circle cx="40" cy="41" r="2.6" fill="#f59e0b"/>
+</svg>

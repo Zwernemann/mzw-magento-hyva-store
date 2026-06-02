@@ -385,6 +385,11 @@ return [
                 'theme' => [
                     'theme_id' => 'Demo/default'
                 ]
+            ],
+            'hyva_theme_general' => [
+                'demo_content' => [
+                    'show_homepage_demo_content' => '0'
+                ]
             ]
         ]
     ]
