@@ -81,6 +81,11 @@
   },
   "repositories": [
     {
+      "name": "private-packagist",
+      "type": "composer",
+      "url": "https://hyva-themes.repo.packagist.com/maz-de-2kyz9fl3izywo/"
+    },
+    {
       "type": "composer",
       "url": "https://mirror.mage-os.org/"
     }
