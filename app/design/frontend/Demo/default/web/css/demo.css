@@ -1,0 +1,168 @@
+/* ==========================================================================
+   Demo shop – B2B styling layer on top of Hyvä default.
+   Plain CSS (no Tailwind build required).
+   ========================================================================== */
+
+/* --- Demo notice banner ------------------------------------------------- */
+.demo-banner {
+    background: linear-gradient(90deg, #b45309 0%, #d97706 100%);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+    border-bottom: 2px solid #92400e;
+}
+.demo-banner__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    text-align: center;
+}
+.demo-banner__badge {
+    flex: none;
+    background: #1f2937;
+    color: #fde68a;
+    font-weight: 700;
+    letter-spacing: .08em;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.demo-banner__text strong { font-weight: 700; }
+
+/* --- B2B trust strip & typography tweaks -------------------------------- */
+:root {
+    --demo-primary: #1e3a8a;
+    --demo-accent: #d97706;
+}
+
+/* --- Text logo ---------------------------------------------------------- */
+.demo-logo {
+    text-decoration: none;
+    gap: 10px;
+}
+.demo-logo__emblem {
+    flex: none;
+    display: block;
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 4px 8px rgba(15, 23, 42, .25));
+}
+.demo-logo__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+.demo-logo__name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--demo-primary);
+}
+.demo-logo__amp { color: var(--demo-accent); }
+.demo-logo__sub {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+/* Category hero (rendered from category description HTML) ----------------- */
+.demo-hero {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    background: #0f172a;
+    color: #fff;
+    box-shadow: 0 10px 25px -10px rgba(15, 23, 42, .5);
+}
+.demo-hero__img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    opacity: .55;
+    display: block;
+}
+.demo-hero__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px 32px;
+    background: linear-gradient(90deg, rgba(15,23,42,.85) 0%, rgba(15,23,42,.25) 100%);
+}
+.demo-hero__title {
+    font-size: 30px;
+    font-weight: 800;
+    margin: 0 0 8px;
+    line-height: 1.15;
+}
+.demo-hero__sub {
+    font-size: 16px;
+    max-width: 640px;
+    opacity: .95;
+}
+
+/* Trust badges row under hero */
+.demo-usp {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 0 0 28px;
+    padding: 0;
+    list-style: none;
+}
+.demo-usp li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+.demo-usp li::before {
+    content: "✓";
+    flex: none;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--demo-accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+}
+
+/* Category intro text block */
+.demo-cat-intro {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #475569;
+    max-width: 820px;
+    margin-bottom: 24px;
+}
+.demo-cat-intro h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 18px 0 8px;
+}
+
+/* --- Product card polish ------------------------------------------------ */
+.products-grid .product-item,
+.product-items .product-item {
+    transition: box-shadow .18s ease, transform .18s ease;
+    border-radius: 10px;
+}
+.products-grid .product-item:hover,
+.product-items .product-item:hover {
+    box-shadow: 0 12px 28px -12px rgba(15, 23, 42, .35);
+    transform: translateY(-2px);
+}

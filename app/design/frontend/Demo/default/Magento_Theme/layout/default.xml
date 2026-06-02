@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="css/demo.css"/>
+        <!-- Brand favicon (L&E emblem). The .ico in Magento_Theme/web overrides the
+             default Magento favicon; apple-touch-icon covers iOS home-screen bookmarks.
+             The crisp SVG variant is injected via head.additional below (a <link> head
+             directive would mis-classify .svg as a font and emit a bogus preload). -->
+        <link src="Magento_Theme::apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+    </head>
+    <body>
+        <referenceContainer name="head.additional">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="demo.favicon.svg"
+                   template="Magento_Theme::html/head/favicon-svg.phtml"/>
+        </referenceContainer>
+        <referenceContainer name="after.body.start">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="demo.banner"
+                   before="-"
+                   template="Magento_Theme::html/demo-banner.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

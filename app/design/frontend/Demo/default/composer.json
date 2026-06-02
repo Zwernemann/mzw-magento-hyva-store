@@ -1,0 +1,9 @@
+{
+    "name": "demo/theme-frontend-default",
+    "description": "Demo child theme based on Hyvä default – adds the demo-shop banner and B2B styling.",
+    "type": "magento2-theme",
+    "license": "proprietary",
+    "require": {
+        "hyva-themes/magento2-default-theme": "*"
+    }
+}
