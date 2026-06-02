@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <!-- Poll incoming emails – interval configurable in admin settings -->
+        <job name="cc_poll_incoming_mail"
+             instance="Zwernemann\ConversationalCommerce\Cron\PollIncomingMail"
+             method="execute">
+            <config_path>conversional_commerce/imap/poll_cron_expr</config_path>
+        </job>
+
+        <!-- Re-index changed products nightly at 02:00 -->
+        <job name="cc_index_products"
+             instance="Zwernemann\ConversationalCommerce\Cron\IndexProducts"
+             method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
+    </group>
+</config>

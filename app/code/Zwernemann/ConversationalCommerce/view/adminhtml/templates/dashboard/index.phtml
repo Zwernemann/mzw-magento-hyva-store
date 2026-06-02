@@ -1,0 +1,126 @@
+<?php
+/** @var \Zwernemann\ConversationalCommerce\Block\Adminhtml\Dashboard\Stats $block */
+$stats = $block->getStats();
+$days  = $block->getSelectedDays();
+?>
+<div class="cc-dashboard">
+    <div class="page-title-wrapper">
+        <h1 class="page-title"><?= $block->escapeHtml(__('Conversational Commerce – Dashboard')) ?></h1>
+    </div>
+
+    <!-- Period switcher -->
+    <div class="cc-period-selector" style="margin: 16px 0;">
+        <strong><?= $block->escapeHtml(__('Zeitraum:')) ?></strong>
+        <?php foreach ([7, 30, 90] as $d): ?>
+            <a href="<?= $block->escapeUrl($block->getDashboardUrl($d)) ?>"
+               style="margin-left:8px; font-weight:<?= $d === $days ? 'bold' : 'normal' ?>;">
+                <?= $block->escapeHtml(__('%1 Tage', $d)) ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="cc-kpi-row" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px;">
+
+        <div class="cc-kpi-card" style="background:#fff;border:1px solid #d6d6d6;border-radius:4px;padding:16px 24px;min-width:180px;">
+            <div class="cc-kpi-label" style="font-size:12px;color:#666;text-transform:uppercase;"><?= $block->escapeHtml(__('Konversationsrate')) ?></div>
+            <div class="cc-kpi-value" style="font-size:32px;font-weight:600;color:#1a6e3a;">
+                <?= $block->escapeHtml($block->formatRate($stats['conversion_rate'])) ?>
+            </div>
+            <div class="cc-kpi-sub" style="font-size:12px;color:#888;">
+                <?= $block->escapeHtml(__(
+                    '%1 von %2 Gesprächen führten zu einer Bestellung',
+                    $stats['converted_conversations'],
+                    $stats['total_conversations']
+                )) ?>
+            </div>
+        </div>
+
+        <div class="cc-kpi-card" style="background:#fff;border:1px solid #d6d6d6;border-radius:4px;padding:16px 24px;min-width:180px;">
+            <div class="cc-kpi-label" style="font-size:12px;color:#666;text-transform:uppercase;"><?= $block->escapeHtml(__('Klärungsrate')) ?></div>
+            <div class="cc-kpi-value" style="font-size:32px;font-weight:600;color:#b45309;">
+                <?= $block->escapeHtml($block->formatRate($stats['clarification_rate'])) ?>
+            </div>
+            <div class="cc-kpi-sub" style="font-size:12px;color:#888;">
+                <?= $block->escapeHtml(__(
+                    '%1 von %2 Antworten enthielten Rückfragen',
+                    $stats['clarification_messages'],
+                    $stats['total_messages']
+                )) ?>
+            </div>
+        </div>
+
+        <div class="cc-kpi-card" style="background:#fff;border:1px solid #d6d6d6;border-radius:4px;padding:16px 24px;min-width:180px;">
+            <div class="cc-kpi-label" style="font-size:12px;color:#666;text-transform:uppercase;"><?= $block->escapeHtml(__('LLM-Kosten gesamt')) ?></div>
+            <div class="cc-kpi-value" style="font-size:32px;font-weight:600;color:#1a3e6e;">
+                <?= $block->escapeHtml($block->formatCost($stats['total_cost_usd'])) ?>
+            </div>
+            <div class="cc-kpi-sub" style="font-size:12px;color:#888;">
+                <?= $block->escapeHtml(__('in den letzten %1 Tagen', $days)) ?>
+            </div>
+        </div>
+
+        <div class="cc-kpi-card" style="background:#fff;border:1px solid #d6d6d6;border-radius:4px;padding:16px 24px;min-width:180px;">
+            <div class="cc-kpi-label" style="font-size:12px;color:#666;text-transform:uppercase;"><?= $block->escapeHtml(__('Kosten pro Nachricht')) ?></div>
+            <div class="cc-kpi-value" style="font-size:32px;font-weight:600;color:#1a3e6e;">
+                <?= $block->escapeHtml($block->formatCost($stats['cost_per_message_usd'])) ?>
+            </div>
+            <div class="cc-kpi-sub" style="font-size:12px;color:#888;">
+                <?= $block->escapeHtml(__('%1 ausgehende Nachrichten', $stats['total_messages'])) ?>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Cost by channel -->
+    <?php if (!empty($stats['cost_by_channel'])): ?>
+    <h3 style="margin-top:0;"><?= $block->escapeHtml(__('LLM-Kosten nach Kanal')) ?></h3>
+    <table class="data-grid" style="margin-bottom:24px;">
+        <thead>
+            <tr>
+                <th><?= $block->escapeHtml(__('Kanal')) ?></th>
+                <th style="text-align:right;"><?= $block->escapeHtml(__('Kosten (USD)')) ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($stats['cost_by_channel'] as $channel => $cost): ?>
+            <tr>
+                <td><?= $block->escapeHtml($channel) ?></td>
+                <td style="text-align:right;"><?= $block->escapeHtml($block->formatCost($cost)) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+
+    <!-- Cost by model -->
+    <?php if (!empty($stats['cost_by_model'])): ?>
+    <h3 style="margin-top:0;"><?= $block->escapeHtml(__('LLM-Kosten nach Modell')) ?></h3>
+    <table class="data-grid" style="margin-bottom:24px;">
+        <thead>
+            <tr>
+                <th><?= $block->escapeHtml(__('Provider')) ?></th>
+                <th><?= $block->escapeHtml(__('Modell')) ?></th>
+                <th style="text-align:right;"><?= $block->escapeHtml(__('API-Aufrufe')) ?></th>
+                <th style="text-align:right;"><?= $block->escapeHtml(__('Gesamtkosten')) ?></th>
+                <th style="text-align:right;"><?= $block->escapeHtml(__('Ø pro Aufruf')) ?></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($stats['cost_by_model'] as $row): ?>
+            <tr>
+                <td><?= $block->escapeHtml($row['provider']) ?></td>
+                <td><?= $block->escapeHtml($row['model']) ?></td>
+                <td style="text-align:right;"><?= (int)$row['calls'] ?></td>
+                <td style="text-align:right;"><?= $block->escapeHtml($block->formatCost($row['total_cost_usd'])) ?></td>
+                <td style="text-align:right;"><?= $block->escapeHtml($block->formatCost($row['avg_cost_usd'])) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+
+    <?php if ($stats['total_conversations'] === 0): ?>
+    <p style="color:#888;"><?= $block->escapeHtml(__('Keine Daten für den gewählten Zeitraum vorhanden.')) ?></p>
+    <?php endif; ?>
+</div>

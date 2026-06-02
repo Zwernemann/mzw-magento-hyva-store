@@ -39,6 +39,37 @@
     --demo-accent: #d97706;
 }
 
+/* --- Text logo ---------------------------------------------------------- */
+.demo-logo {
+    text-decoration: none;
+    gap: 10px;
+}
+.demo-logo__emblem {
+    flex: none;
+    display: block;
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 4px 8px rgba(15, 23, 42, .25));
+}
+.demo-logo__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+.demo-logo__name {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--demo-primary);
+}
+.demo-logo__amp { color: var(--demo-accent); }
+.demo-logo__sub {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
 /* Category hero (rendered from category description HTML) ----------------- */
 .demo-hero {
     position: relative;

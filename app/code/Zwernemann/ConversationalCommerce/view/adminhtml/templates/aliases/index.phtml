@@ -1,0 +1,99 @@
+<?php
+/** @var \Zwernemann\ConversionalCommerce\Block\Adminhtml\Aliases\Index $block */
+$aliases = $block->getAliases();
+?>
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('Customer Email Aliases')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <p><?= $block->escapeHtml(__('Register additional email addresses per customer. Incoming emails from these addresses will be authenticated as the customer\'s primary account.')) ?></p>
+
+        <!-- Add alias form -->
+        <fieldset class="admin__fieldset" style="max-width:640px;margin-bottom:2rem;">
+            <legend class="admin__legend"><span><?= $block->escapeHtml(__('Add New Alias')) ?></span></legend>
+            <form action="<?= $block->escapeUrl($block->getSaveUrl()) ?>" method="post">
+                <?= $block->getBlockHtml('formkey') ?>
+
+                <div class="admin__field _required">
+                    <label class="admin__field-label" for="customer_email">
+                        <?= $block->escapeHtml(__('Customer Primary Email')) ?>
+                    </label>
+                    <div class="admin__field-control">
+                        <input type="email" name="customer_email" id="customer_email"
+                               class="admin__control-text" placeholder="kunde@firma.de" required/>
+                        <p class="admin__field-note"><?= $block->escapeHtml(__('The existing customer\'s main email address in Magento.')) ?></p>
+                    </div>
+                </div>
+
+                <div class="admin__field _required">
+                    <label class="admin__field-label" for="alias_email">
+                        <?= $block->escapeHtml(__('Alias Email Address')) ?>
+                    </label>
+                    <div class="admin__field-control">
+                        <input type="email" name="email" id="alias_email"
+                               class="admin__control-text" placeholder="alias@firma.de" required/>
+                        <p class="admin__field-note"><?= $block->escapeHtml(__('Emails from this address will be treated as coming from the customer above.')) ?></p>
+                    </div>
+                </div>
+
+                <div class="admin__field">
+                    <label class="admin__field-label" for="alias_label">
+                        <?= $block->escapeHtml(__('Label (optional)')) ?>
+                    </label>
+                    <div class="admin__field-control">
+                        <input type="text" name="label" id="alias_label"
+                               class="admin__control-text"
+                               placeholder="<?= $block->escapeHtml(__('e.g. Work laptop, Colleague')) ?>"/>
+                    </div>
+                </div>
+
+                <div class="admin__field">
+                    <div class="admin__field-control">
+                        <button type="submit" class="action-default scalable save primary">
+                            <?= $block->escapeHtml(__('Add Alias')) ?>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </fieldset>
+
+        <!-- Alias list -->
+        <?php if (empty($aliases)): ?>
+            <p><?= $block->escapeHtml(__('No email aliases registered yet.')) ?></p>
+        <?php else: ?>
+            <table class="data-grid">
+                <thead>
+                    <tr>
+                        <th><?= $block->escapeHtml(__('ID')) ?></th>
+                        <th><?= $block->escapeHtml(__('Alias Email')) ?></th>
+                        <th><?= $block->escapeHtml(__('Label')) ?></th>
+                        <th><?= $block->escapeHtml(__('Customer')) ?></th>
+                        <th><?= $block->escapeHtml(__('Primary Email')) ?></th>
+                        <th><?= $block->escapeHtml(__('Created')) ?></th>
+                        <th><?= $block->escapeHtml(__('Action')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($aliases as $alias): ?>
+                        <tr>
+                            <td><?= (int)$alias['id'] ?></td>
+                            <td><?= $block->escapeHtml($alias['email'] ?? '') ?></td>
+                            <td><?= $block->escapeHtml($alias['label'] ?? '') ?></td>
+                            <td><?= $block->escapeHtml(trim(($alias['firstname'] ?? '') . ' ' . ($alias['lastname'] ?? ''))) ?></td>
+                            <td><?= $block->escapeHtml($alias['main_email'] ?? '') ?></td>
+                            <td><?= $block->escapeHtml($alias['created_at'] ?? '') ?></td>
+                            <td>
+                                <a href="<?= $block->escapeUrl($block->getDeleteUrl((int)$alias['id'])) ?>"
+                                   onclick="return confirm('<?= $block->escapeJs(__('Delete this alias?')) ?>');"
+                                   class="action-delete">
+                                    <?= $block->escapeHtml(__('Delete')) ?>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>

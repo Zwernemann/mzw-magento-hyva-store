@@ -1,0 +1,470 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="zwernemann" translate="label" sortOrder="300">
+            <label>Zwernemann</label>
+        </tab>
+
+        <section id="conversional_commerce" translate="label" sortOrder="100"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Conversational Commerce</label>
+            <tab>zwernemann</tab>
+            <resource>Zwernemann_ConversationalCommerce::conversations</resource>
+
+            <!-- General -->
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Conversational Commerce</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+            <!-- IMAP -->
+            <group id="imap" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>IMAP (Incoming Mail)</label>
+                <field id="enabled" translate="label" type="select" sortOrder="5"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Email Channel</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>When disabled, this store's mailbox is not polled. Each store can have its own mailbox.</comment>
+                </field>
+                <field id="host" translate="label" type="text" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>IMAP Host</label>
+                    <comment>e.g. mail.example.com</comment>
+                </field>
+                <field id="port" translate="label" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Port</label>
+                </field>
+                <field id="use_ssl" translate="label" type="select" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Use SSL/TLS</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="username" translate="label" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Username</label>
+                </field>
+                <field id="password" translate="label" type="obscure" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Password</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="mailbox" translate="label" type="text" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Mailbox</label>
+                </field>
+                <field id="poll_cron_expr" translate="label" type="text" sortOrder="70" showInDefault="1">
+                    <label>Polling Interval (Cron Expression)</label>
+                    <comment>Cron expression for mail polling. Default: */2 * * * * (every 2 minutes). Minimum interval: 1 minute. Examples: */1 = every minute, */5 = every 5 minutes. Changes require bin/magento cron:run or a scheduler restart.</comment>
+                </field>
+            </group>
+
+            <!-- SMTP -->
+            <group id="smtp" translate="label" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>SMTP (Outgoing Mail)</label>
+                <field id="host" translate="label" type="text" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>SMTP Host</label>
+                </field>
+                <field id="port" translate="label" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Port</label>
+                </field>
+                <field id="use_tls" translate="label" type="select" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Use STARTTLS</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="username" translate="label" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Username</label>
+                </field>
+                <field id="password" translate="label" type="obscure" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Password</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="from_email" translate="label" type="text" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>From E-Mail</label>
+                </field>
+                <field id="from_name" translate="label" type="text" sortOrder="70"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>From Name</label>
+                </field>
+            </group>
+
+            <!-- LLM Provider + universeller System-Prompt -->
+            <group id="llm" translate="label" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>KI-Sprachmodell (LLM)</label>
+                <field id="provider" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Aktiver Provider</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\LlmProvider</source_model>
+                    <comment>Anthropic Claude: maximale Qualität, US-Server (SCCs beachten). Mistral AI: DSGVO-konform, EU-Rechenzentren, kein Datentransfer in Drittländer.</comment>
+                </field>
+                <field id="system_prompt" translate="label" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>System Prompt</label>
+                    <comment>Gilt für beide Provider. Leer lassen = Standard-Prompt (empfohlen). Änderungen werden sofort wirksam.</comment>
+                    <backend_model>Zwernemann\ConversationalCommerce\Model\Config\Backend\SystemPrompt</backend_model>
+                </field>
+                <field id="history_turns_main" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>History-Turns Hauptmodell</label>
+                    <comment>Anzahl der letzten Gesprächsrunden (User+Assistent je 1 Turn), die dem Hauptmodell als Multi-Turn-Kontext übergeben werden. Mehr Turns = mehr Kontext, aber höhere Kosten. Standard: 4</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="history_turns_account" translate="label" type="text" sortOrder="35" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>History-Turns Konto-/Bestellanfragen</label>
+                    <comment>Anzahl History-Turns für Adress-, Bestell-, Warenkorb- und Konto-Anfragen (kein Produkt-RAG nötig). Niedriger als Hauptmodell-Turns um Tokens zu sparen. Standard: 2</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="history_turns_query" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>History-Nachrichten Query-Builder</label>
+                    <comment>Anzahl der letzten Nachrichten, die dem Fast-Model (Haiku / Ministral) für die Query-Reformulierung übergeben werden. Standard: 6</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="history_message_max_chars" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>History-Nachricht Max. Zeichen</label>
+                    <comment>Maximale Zeichenanzahl pro Nachricht in der LLM-History. Bei Überschreitung werden erste und letzte Hälfte beibehalten. Gilt für alle Kanäle (E-Mail, WebChat, WhatsApp). Standard: 2000</comment>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
+
+            <!-- Anthropic Claude -->
+            <group id="anthropic" translate="label" sortOrder="45" showInDefault="1" showInWebsite="1">
+                <label>Anthropic Claude</label>
+                <field id="api_key" translate="label" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1">
+                    <label>API Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="model" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1">
+                    <label>Hauptmodell</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\AnthropicModel</source_model>
+                    <comment>Sonnet 4.6 empfohlen – ca. 5× günstiger als Opus 4.7 bei vergleichbarer Qualität für B2B-Bestellassistenz.</comment>
+                </field>
+                <field id="max_tokens" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1">
+                    <label>Max Tokens</label>
+                </field>
+                <field id="fast_model" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1">
+                    <label>Schnellmodell (Query-Reformulierung)</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\AnthropicModel</source_model>
+                    <comment>Wird für die kostengünstige Konversations-Query-Reformulierung genutzt. Standard: Haiku 4.5.</comment>
+                </field>
+            </group>
+
+            <!-- Mistral AI (DSGVO) -->
+            <group id="mistral" translate="label" sortOrder="47" showInDefault="1" showInWebsite="1">
+                <label>Mistral AI (DSGVO / EU)</label>
+                <field id="api_key" translate="label" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1">
+                    <label>API Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>API Key von console.mistral.ai</comment>
+                </field>
+                <field id="model" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1">
+                    <label>Hauptmodell</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\MistralModel</source_model>
+                    <comment>Mistral Large empfohlen für B2B-Bestellassistenz.</comment>
+                </field>
+                <field id="max_tokens" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1">
+                    <label>Max Tokens</label>
+                </field>
+                <field id="fast_model" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1">
+                    <label>Schnellmodell (Query-Reformulierung)</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\MistralModel</source_model>
+                    <comment>Wird für die kostengünstige Konversations-Query-Reformulierung genutzt. Standard: Ministral 3B.</comment>
+                </field>
+            </group>
+
+            <!-- Voyage AI -->
+            <group id="voyage" translate="label" sortOrder="50" showInDefault="1">
+                <label>Voyage AI (Embeddings)</label>
+                <field id="api_key" translate="label" type="obscure" sortOrder="10" showInDefault="1">
+                    <label>API Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="model" translate="label" type="text" sortOrder="20" showInDefault="1">
+                    <label>Model</label>
+                    <comment>e.g. voyage-3</comment>
+                </field>
+                <field id="catalog_language" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Catalog Language</label>
+                    <comment>Language products are stored in (e.g. "English"). When set, the term extractor also generates synonyms in this language for non-English customer queries. Leave empty to disable.</comment>
+                </field>
+            </group>
+
+            <!-- Pinecone -->
+            <group id="pinecone" translate="label" sortOrder="60" showInDefault="1">
+                <label>Pinecone (Vector DB)</label>
+                <field id="api_key" translate="label" type="obscure" sortOrder="10" showInDefault="1">
+                    <label>API Key</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="index_name" translate="label" type="text" sortOrder="20" showInDefault="1">
+                    <label>Index Name</label>
+                    <comment>e.g. magento-products</comment>
+                </field>
+                <field id="region" translate="label" type="text" sortOrder="30" showInDefault="1">
+                    <label>Region</label>
+                    <comment>e.g. us-east-1</comment>
+                </field>
+                <field id="top_k" translate="label" type="text" sortOrder="40" showInDefault="1">
+                    <label>Top K Results</label>
+                </field>
+            </group>
+
+            <!-- Product Indexer -->
+            <group id="product_index" translate="label" sortOrder="62" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Produktsuche / Indexierung</label>
+                <field id="excluded_attributes" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Ausgeschlossene Attribute</label>
+                    <comment>Kommagetrennte Liste von Attribut-Codes, die NICHT in den Pinecone-Index (Embed-Text und Metadaten) aufgenommen werden. Sensible Felder wie Einkaufspreise oder interne Notizen hier eintragen. Nach einer Änderung ist ein vollständiger Re-Index erforderlich (bin/magento cc:products:index --force).</comment>
+                </field>
+            </group>
+
+            <!-- Payment & Shipping -->
+            <group id="payment" translate="label" sortOrder="65" showInDefault="1" showInWebsite="1">
+                <label>Payment &amp; Shipping</label>
+                <field id="method" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1">
+                    <label>Payment Method Code</label>
+                    <comment>Magento payment method code used when placing orders. Examples: checkmo, purchaseorder, free. Default: checkmo.</comment>
+                </field>
+                <field id="po_number_mode" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1">
+                    <label>PO Number Mode</label>
+                    <source_model>Zwernemann\ConversationalCommerce\Model\Config\Source\PoNumberMode</source_model>
+                    <comment>Only relevant when payment method is "purchaseorder". With "ask_customer" the assistant will request a PO number before placing the order. With "auto_generate" a reference number is created automatically.</comment>
+                </field>
+                <field id="shipping_method" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1">
+                    <label>Preferred Shipping Method</label>
+                    <comment>Carrier code and method code joined by underscore, e.g. flatrate_flatrate or freeshipping_freeshipping. Leave empty to use the first available method.</comment>
+                </field>
+            </group>
+
+            <!-- Magento REST API -->
+            <group id="magento_api" translate="label" sortOrder="70" showInDefault="1">
+                <label>Magento REST API</label>
+                <field id="base_url" translate="label" type="text" sortOrder="10" showInDefault="1">
+                    <label>Base URL</label>
+                    <comment>Leave empty to use this instance. e.g. https://work.maz.de</comment>
+                </field>
+                <field id="admin_token" translate="label" type="obscure" sortOrder="20" showInDefault="1">
+                    <label>Admin Integration Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+            </group>
+            <!-- Web Chat Widget -->
+            <group id="webchat" translate="label" sortOrder="85" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Web Chat Widget</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Web Chat Widget</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Shows an AI-powered chat widget on the storefront for logged-in customers. Uses the same pipeline as email and WhatsApp.</comment>
+                </field>
+                <field id="title" translate="label" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Widget Title</label>
+                    <comment>Displayed in the chat header. e.g. "Chat with us" or "Order Assistant"</comment>
+                </field>
+                <field id="button_label" translate="label" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Chat Button Label</label>
+                    <comment>Text on the floating action button. e.g. "Chat" or "Order now"</comment>
+                </field>
+                <field id="welcome_message" translate="label" type="textarea" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Welcome Message</label>
+                    <comment>First message shown when the chat opens.</comment>
+                </field>
+                <field id="primary_color" translate="label" type="text" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Primary Color</label>
+                    <comment>Hex color code for the chat header, button and accents. e.g. #1a73e8</comment>
+                </field>
+                <field id="debug_llm" translate="label" type="select" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>LLM Debug Output (WebChat)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>When enabled, every LLM request payload and full response is shown as a formatted debug block in the WebChat window. Disable in production.</comment>
+                </field>
+            </group>
+
+            <!-- Escalation & Monitoring -->
+            <group id="escalation" translate="label" sortOrder="75" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Eskalation &amp; Überwachung</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Eskalations-Trigger aktivieren</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Wenn aktiviert, pausiert die KI bei definierten Auslösern und benachrichtigt den Admin.</comment>
+                </field>
+                <field id="confidence_threshold" translate="label" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Confidence-Schwellwert</label>
+                    <comment>KI-Anfragen mit Konfidenz unterhalb dieses Werts werden eskaliert. Bereich: 0.0–1.0. Standard: 0.75 (= 75%). Auf 0 setzen um diesen Trigger zu deaktivieren.</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+                <field id="order_value_limit" translate="label" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Bestellwert-Freigabelimit (EUR)</label>
+                    <comment>Bestellungen oberhalb dieses Betrags werden zur manuellen Freigabe eskaliert. Auf 0 setzen um diesen Trigger zu deaktivieren. Standard: 5000.</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+                <field id="admin_email" translate="label" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Benachrichtigungs-E-Mail (Admin)</label>
+                    <comment>E-Mail-Adresse für Eskalationsbenachrichtigungen. Leer lassen um E-Mail-Benachrichtigungen zu deaktivieren.</comment>
+                    <validate>validate-email</validate>
+                </field>
+                <field id="keywords" translate="label" type="text" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Trigger-Schlüsselwörter</label>
+                    <comment>Kommagetrennte Liste. Wenn ein Wort in der Kundennachricht auftaucht, wird sofort eskaliert. Groß-/Kleinschreibung wird ignoriert. Beispiel: Beschwerde,Reklamation,Kündigung,Anwalt</comment>
+                </field>
+            </group>
+
+            <!-- Systemfehler-Benachrichtigungen -->
+            <group id="notifications" translate="label" sortOrder="78" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Systemfehler-Benachrichtigungen</label>
+                <field id="error_email" translate="label comment" type="text" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>E-Mail für kritische Fehler</label>
+                    <comment>E-Mail-Adresse für Benachrichtigungen bei kritischen Systemfehlern (z.B. Anthropic-Quota erschöpft, LLM-Verbindungsfehler, Pipeline-Absturz). Leer lassen zum Deaktivieren. Identische Fehler werden maximal 1× pro Stunde gesendet.</comment>
+                    <validate>validate-email</validate>
+                </field>
+            </group>
+
+            <!-- Allowed Actions (Tool Permissions) -->
+            <group id="tools" translate="label" sortOrder="75" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Erlaubte Aktionen (Tool-Berechtigungen)</label>
+                <comment>Deaktivierte Tools werden dem KI-Assistenten gar nicht erst angeboten. Das Tool redirect_to_store ist immer aktiv und kann nicht deaktiviert werden.</comment>
+
+                <!-- Orders -->
+                <field id="cart_add_item" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Artikel zum Warenkorb hinzufügen (cart_add_item)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="cart_update_item" translate="label" type="select" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Warenkorb-Menge ändern (cart_update_item)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="cart_remove_item" translate="label" type="select" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Artikel aus Warenkorb entfernen (cart_remove_item)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="cart_checkout" translate="label" type="select" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Bestellung aufgeben / Warenkorb auschecken (cart_checkout)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="reorder_from_history" translate="label" type="select" sortOrder="14" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Aus Bestellhistorie nachbestellen (reorder_from_history)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="get_order_history" translate="label" type="select" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Bestellhistorie abfragen (get_order_history)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="get_order_detail" translate="label" type="select" sortOrder="16" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Bestelldetails abfragen (get_order_detail)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="get_shipment_tracking" translate="label" type="select" sortOrder="17" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Sendungsverfolgung abfragen (get_shipment_tracking)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="get_invoice" translate="label" type="select" sortOrder="18" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Rechnung abrufen (get_invoice)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <!-- Addresses -->
+                <field id="get_shipping_addresses" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Lieferadressen anzeigen (get_shipping_addresses)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="add_shipping_address" translate="label" type="select" sortOrder="21" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Neue Lieferadresse hinzufügen (add_shipping_address)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="set_order_shipping_address" translate="label" type="select" sortOrder="22" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Lieferadresse einer Bestellung ändern (set_order_shipping_address)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <!-- Coupons -->
+                <field id="apply_coupon_code" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Gutscheincode einlösen (apply_coupon_code)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="remove_coupon_code" translate="label" type="select" sortOrder="31" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Gutscheincode entfernen (remove_coupon_code)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <!-- Wishlist -->
+                <field id="get_wishlist" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Wunschliste anzeigen (get_wishlist)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="wishlist_add_item" translate="label" type="select" sortOrder="41" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Produkt zur Wunschliste hinzufügen (wishlist_add_item)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="wishlist_remove_item" translate="label" type="select" sortOrder="42" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Produkt von Wunschliste entfernen (wishlist_remove_item)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="wishlist_move_to_cart" translate="label" type="select" sortOrder="43" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Wunschlisten-Artikel in Warenkorb (wishlist_move_to_cart)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <!-- Account -->
+                <field id="get_account_info" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Kontodaten anzeigen (get_account_info)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="update_account_info" translate="label" type="select" sortOrder="51" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Kontodaten ändern (update_account_info)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="toggle_newsletter" translate="label" type="select" sortOrder="52" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Newsletter an-/abmelden (toggle_newsletter)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <!-- Products -->
+                <field id="search_products_by_filter" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Produkte nach Filter suchen (search_products_by_filter)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="set_stock_notification" translate="label" type="select" sortOrder="61" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Lagerbenachrichtigung aktivieren (set_stock_notification)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+            <!-- WhatsApp Connector -->
+            <group id="whatsapp" translate="label" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>WhatsApp Connector</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable WhatsApp Channel</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Activates the /rest/V1/cc/inbound endpoint for the external WhatsApp connector service.</comment>
+                </field>
+                <field id="connector_url" translate="label" type="text" sortOrder="20" showInDefault="1">
+                    <label>Connector URL</label>
+                    <comment>Public HTTPS URL of your WhatsApp connector server (e.g. https://wa-connector.example.com). Informational only.</comment>
+                </field>
+                <field id="connector_secret" translate="label" type="obscure" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Connector Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>Shared secret between Magento and the connector. Each store can have its own secret for multi-store routing. Must match CONNECTOR_SECRET in the connector .env file.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

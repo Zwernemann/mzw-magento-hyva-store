@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+
+    <!--
+        Inbound message endpoint for external channel connectors (e.g. WhatsApp).
+        The connector POSTs a message, receives the LLM response text, and
+        forwards it to the end user via the respective messaging API.
+    -->
+    <route url="/V1/cc/inbound" method="POST">
+        <service class="Zwernemann\ConversationalCommerce\Api\InboundApiInterface"
+                 method="processInbound"/>
+        <resources>
+            <resource ref="Zwernemann_ConversationalCommerce::conversations"/>
+        </resources>
+    </route>
+
+    <!--
+        DSGVO Art. 17 – Recht auf Löschung (Kunden-Self-Service).
+        Authenticated customer can delete their own conversation data.
+    -->
+    <route url="/V1/cc/privacy/me" method="DELETE">
+        <service class="Zwernemann\ConversationalCommerce\Api\CustomerPrivacyInterface"
+                 method="deleteMyData"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="customerId" force="true">%customer_id%</parameter>
+        </data>
+    </route>
+
+</routes>
