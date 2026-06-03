@@ -70,11 +70,11 @@ OUT="$OUT_DIR/magento-migrate-$STAMP.tar.gz"
 mkdir -p "$BUNDLE_DIR"
 
 say "Magento root: $MAGENTO_ROOT"
-echo "    $(php bin/magento --version 2>/dev/null || echo 'version unknown')"
+echo "    $(php -d memory_limit=-1 bin/magento --version 2>/dev/null || echo 'version unknown')"
 
 # --- read DB credentials from env.php ----------------------------------------
 say "Reading DB credentials from app/etc/env.php"
-read -r DB_HOST DB_NAME DB_USER DB_PASS < <(php -r '
+read -r DB_HOST DB_NAME DB_USER DB_PASS < <(php -d memory_limit=-1 -r '
   $e = include "app/etc/env.php"; $c = $e["db"]["connection"]["default"];
   echo $c["host"]." ".$c["dbname"]." ".$c["username"]." ".$c["password"]."\n";
 ')

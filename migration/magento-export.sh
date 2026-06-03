@@ -42,11 +42,11 @@ OUT="$OUT_DIR/magento-migrate-$STAMP.tar.gz"
 mkdir -p "$BUNDLE_DIR"
 
 say "Magento root: $MAGENTO_ROOT"
-echo "    $(php bin/magento --version 2>/dev/null || echo 'version unknown')"
+echo "    $(php -d memory_limit=-1 bin/magento --version 2>/dev/null || echo 'version unknown')"
 
 # --- read DB credentials from env.php ----------------------------------------
 say "Reading DB credentials from app/etc/env.php"
-read -r DB_HOST DB_NAME DB_USER DB_PASS < <(php -r '
+read -r DB_HOST DB_NAME DB_USER DB_PASS < <(php -d memory_limit=-1 -r '
   $e = include "app/etc/env.php"; $c = $e["db"]["connection"]["default"];
   echo $c["host"]." ".$c["dbname"]." ".$c["username"]." ".$c["password"]."\n";
 ')
@@ -276,7 +276,7 @@ ok "Database imported"
 say "Writing app/etc/env.php for this box (preserving crypt key)"
 # Reuse crypt key + table prefix from the source so encrypted DB values still decrypt.
 TMP_ENV="$(mktemp)"
-php -r '
+php -d memory_limit=-1 -r '
   $src = include $argv[1];
   $crypt  = $src["crypt"]["key"] ?? "";
   $prefix = $src["db"]["table_prefix"] ?? "";
@@ -328,7 +328,7 @@ set_run_as() {
   if [[ "$(id -un)" == "$RUN_USER" ]]; then RUN_AS=(); else RUN_AS=(sudo -u "$RUN_USER"); fi
 }
 set_run_as
-php_bin() { ( cd "$APP_DIR" && "${RUN_AS[@]}" php bin/magento "$@" ); }
+php_bin() { ( cd "$APP_DIR" && "${RUN_AS[@]}" php -d memory_limit=-1 bin/magento "$@" ); }
 
 # ----------------------------------------------------------- permissions ----
 say "Setting ownership to '$RUN_USER:$FILE_GROUP' and permissions on the whole tree"
@@ -408,7 +408,7 @@ cat <<DONE
      (Hyvä/Magento needs the standard nginx.conf.sample include).
   2. PHP-FPM: ensure it runs as '$RUN_USER' and is started.
   3. Cron (recommended): add Magento cron, e.g.
-       * * * * * php $APP_DIR/bin/magento cron:run >> $APP_DIR/var/log/cron.log 2>&1
+       * * * * * php -d memory_limit=-1 $APP_DIR/bin/magento cron:run >> $APP_DIR/var/log/cron.log 2>&1
   4. Open the firewall / security group for HTTP(S).
   5. Security: delete the migration bundle — it holds the DB + crypt key.
 
@@ -549,7 +549,7 @@ Server-Einrichtung abhängen:
 3. **Cron** (empfohlen, sonst keine Index-/Mail-/Queue-Jobs) – als `RUN_USER`:
    ```bash
    sudo -u magento crontab -l   # prüfen
-   * * * * * php /var/www/magento/bin/magento cron:run >> /var/www/magento/var/log/cron.log 2>&1
+   * * * * * php -d memory_limit=-1 /var/www/magento/bin/magento cron:run >> /var/www/magento/var/log/cron.log 2>&1
    ```
 4. **Security Group / Firewall** für HTTP(S) öffnen.
 5. **Bündel löschen** – es enthält DB-Dump **und** Crypt-Key:
@@ -562,7 +562,7 @@ Server-Einrichtung abhängen:
 - In den **Production-Mode** wechseln (statische Assets vorab deployen):
   ```bash
   cd /var/www/magento
-  php bin/magento deploy:mode:set production
+  php -d memory_limit=-1 bin/magento deploy:mode:set production
   ```
 - Redis für Cache/Session nachrüsten und in `env.php` eintragen.
 - OpenSearch-Heap (`/etc/opensearch/jvm.options`) an den RAM anpassen.
@@ -582,13 +582,13 @@ Server-Einrichtung abhängen:
   - **nginx:** den `include …/nginx.conf.sample;`-Block einbinden (macht dasselbe
     ohne `.htaccess`).
   - Alternativ Assets fest deployen statt on-demand:
-    `sudo -u magento php bin/magento setup:static-content:deploy -f en_US de_DE`.
+    `sudo -u magento php -d memory_limit=-1 bin/magento setup:static-content:deploy -f en_US de_DE`.
 - **Storefront 500 beim ersten Aufruf** → `var/log/` prüfen; meist ist
   OpenSearch noch nicht erreichbar oder die Rechte stimmen nicht.
 - **„Could not validate a connection to Elasticsearch/OpenSearch“** →
   `curl localhost:9200` prüfen, ggf. `systemctl status opensearch`.
 - **Reindex-Fehler** → erst OpenSearch-Gesundheit sichern, dann
-  `php bin/magento indexer:reindex` erneut.
+  `php -d memory_limit=-1 bin/magento indexer:reindex` erneut.
 - **Falsche URLs / Redirect-Loop** → Base-URL in `core_config_data` prüfen
   und `php bin/magento cache:flush`.
 MAGENTO_README_EOF

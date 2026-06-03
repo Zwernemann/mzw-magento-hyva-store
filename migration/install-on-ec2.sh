@@ -209,7 +209,7 @@ ok "Database imported"
 say "Writing app/etc/env.php for this box (preserving crypt key)"
 # Reuse crypt key + table prefix from the source so encrypted DB values still decrypt.
 TMP_ENV="$(mktemp)"
-php -r '
+php -d memory_limit=-1 -r '
   $src = include $argv[1];
   $crypt  = $src["crypt"]["key"] ?? "";
   $prefix = $src["db"]["table_prefix"] ?? "";
@@ -261,7 +261,7 @@ set_run_as() {
   if [[ "$(id -un)" == "$RUN_USER" ]]; then RUN_AS=(); else RUN_AS=(sudo -u "$RUN_USER"); fi
 }
 set_run_as
-php_bin() { ( cd "$APP_DIR" && "${RUN_AS[@]}" php bin/magento "$@" ); }
+php_bin() { ( cd "$APP_DIR" && "${RUN_AS[@]}" php -d memory_limit=-1 bin/magento "$@" ); }
 
 # ----------------------------------------------------------- permissions ----
 say "Setting ownership to '$RUN_USER:$FILE_GROUP' and permissions on the whole tree"
@@ -341,7 +341,7 @@ cat <<DONE
      (Hyvä/Magento needs the standard nginx.conf.sample include).
   2. PHP-FPM: ensure it runs as '$RUN_USER' and is started.
   3. Cron (recommended): add Magento cron, e.g.
-       * * * * * php $APP_DIR/bin/magento cron:run >> $APP_DIR/var/log/cron.log 2>&1
+       * * * * * php -d memory_limit=-1 $APP_DIR/bin/magento cron:run >> $APP_DIR/var/log/cron.log 2>&1
   4. Open the firewall / security group for HTTP(S).
   5. Security: delete the migration bundle — it holds the DB + crypt key.
 

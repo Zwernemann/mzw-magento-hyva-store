@@ -128,7 +128,7 @@ Server-Einrichtung abhängen:
 3. **Cron** (empfohlen, sonst keine Index-/Mail-/Queue-Jobs) – als `RUN_USER`:
    ```bash
    sudo -u magento crontab -l   # prüfen
-   * * * * * php /var/www/magento/bin/magento cron:run >> /var/www/magento/var/log/cron.log 2>&1
+   * * * * * php -d memory_limit=-1 /var/www/magento/bin/magento cron:run >> /var/www/magento/var/log/cron.log 2>&1
    ```
 4. **Security Group / Firewall** für HTTP(S) öffnen.
 5. **Bündel löschen** – es enthält DB-Dump **und** Crypt-Key:
@@ -141,7 +141,7 @@ Server-Einrichtung abhängen:
 - In den **Production-Mode** wechseln (statische Assets vorab deployen):
   ```bash
   cd /var/www/magento
-  php bin/magento deploy:mode:set production
+  php -d memory_limit=-1 bin/magento deploy:mode:set production
   ```
 - Redis für Cache/Session nachrüsten und in `env.php` eintragen.
 - OpenSearch-Heap (`/etc/opensearch/jvm.options`) an den RAM anpassen.
@@ -161,12 +161,12 @@ Server-Einrichtung abhängen:
   - **nginx:** den `include …/nginx.conf.sample;`-Block einbinden (macht dasselbe
     ohne `.htaccess`).
   - Alternativ Assets fest deployen statt on-demand:
-    `sudo -u magento php bin/magento setup:static-content:deploy -f en_US de_DE`.
+    `sudo -u magento php -d memory_limit=-1 bin/magento setup:static-content:deploy -f en_US de_DE`.
 - **Storefront 500 beim ersten Aufruf** → `var/log/` prüfen; meist ist
   OpenSearch noch nicht erreichbar oder die Rechte stimmen nicht.
 - **„Could not validate a connection to Elasticsearch/OpenSearch“** →
   `curl localhost:9200` prüfen, ggf. `systemctl status opensearch`.
 - **Reindex-Fehler** → erst OpenSearch-Gesundheit sichern, dann
-  `php bin/magento indexer:reindex` erneut.
+  `php -d memory_limit=-1 bin/magento indexer:reindex` erneut.
 - **Falsche URLs / Redirect-Loop** → Base-URL in `core_config_data` prüfen
   und `php bin/magento cache:flush`.
