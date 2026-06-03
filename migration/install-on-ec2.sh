@@ -25,10 +25,16 @@ DB_USER="${DB_USER:-magento}"
 DB_PASS="${DB_PASS:-}"                       # if empty, a strong one is generated
 BASE_URL="${BASE_URL:-}"                     # e.g. http://1.2.3.4/  (required)
 SEARCH_ENGINE="${SEARCH_ENGINE:-opensearch}" # opensearch | elasticsearch8
-SEARCH_HOST="${SEARCH_HOST:-localhost}"
+SEARCH_HOST="${SEARCH_HOST:-localhost}"      # hostname only, no scheme (e.g. xxx.aivencloud.com)
 SEARCH_PORT="${SEARCH_PORT:-9200}"
-RUN_USER="${RUN_USER:-nginx}"                # web-server/php-fpm user (nginx or apache)
-INSTALL_OPENSEARCH="${INSTALL_OPENSEARCH:-ask}"   # yes | no | ask — only used when SEARCH_ENGINE=opensearch
+SEARCH_SCHEME="${SEARCH_SCHEME:-http}"       # http | https  (managed/Aiven = https)
+SEARCH_USER="${SEARCH_USER:-}"               # auth username (managed OpenSearch)
+SEARCH_PASS="${SEARCH_PASS:-}"               # auth password
+SEARCH_CA_CERT="${SEARCH_CA_CERT:-}"         # path to a CA cert (e.g. Aiven ca.pem) to add to the trust store
+SEARCH_INDEX_PREFIX="${SEARCH_INDEX_PREFIX:-}" # optional OpenSearch index prefix
+SEARCH_TLS_INSECURE="${SEARCH_TLS_INSECURE:-0}" # 1 = skip TLS verify in the reachability check ONLY
+RUN_USER="${RUN_USER:-apache}"               # OS user that OWNS the files & runs bin/magento (apache/nginx/magento)
+FILE_GROUP="${FILE_GROUP:-$RUN_USER}"        # group owner of the files (e.g. apache)
 
 usage() {
   cat <<EOF
@@ -41,15 +47,27 @@ Environment variables (all optional except BASE_URL):
   DB_NAME=magento             Database name (created if missing)
   DB_USER=magento             Database user (created if missing)
   DB_PASS=...                 DB user password (auto-generated if unset)
-  RUN_USER=nginx              OS user running PHP-FPM / web server
-  SEARCH_ENGINE=opensearch    Search engine: opensearch | elasticsearch8
-  SEARCH_HOST=localhost       Search engine host
+  RUN_USER=apache             OS user that owns the files & runs bin/magento (apache/nginx/magento)
+  FILE_GROUP=apache           Group owner of the files (defaults to RUN_USER)
+  SEARCH_ENGINE=opensearch    External search engine: opensearch | elasticsearch8
+  SEARCH_HOST=localhost       Search engine host (hostname only, no scheme)
   SEARCH_PORT=9200            Search engine port
-  INSTALL_OPENSEARCH=ask      yes | no | ask — install OpenSearch if missing
-                              (ignored when SEARCH_ENGINE=elasticsearch8)
+  SEARCH_SCHEME=http          http | https  (managed services like Aiven use https)
+  SEARCH_USER=                Auth username (managed OpenSearch)
+  SEARCH_PASS=                Auth password
+  SEARCH_CA_CERT=             Path to a CA cert (e.g. Aiven ca.pem) added to the trust store
+  SEARCH_INDEX_PREFIX=        Optional OpenSearch index prefix
 
-Using an existing Elasticsearch 8.x on the box (no OpenSearch installed):
-  BASE_URL=http://<ip>/ SEARCH_ENGINE=elasticsearch8 SEARCH_PORT=9200 ./install-on-ec2.sh
+This installer NEVER installs a search engine — it points Magento at your
+external OpenSearch/Elasticsearch and only verifies it is reachable.
+
+Example — managed OpenSearch on Aiven (files owned by magento:apache):
+  BASE_URL=http://<ip>/ \\
+    RUN_USER=magento FILE_GROUP=apache \\
+    SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \\
+    SEARCH_HOST=xxx.aivencloud.com SEARCH_PORT=12345 \\
+    SEARCH_USER=avnadmin SEARCH_PASS=secret SEARCH_CA_CERT=./aiven-ca.pem \\
+    ./install-on-ec2.sh
 EOF
 }
 
@@ -69,6 +87,10 @@ case "$SEARCH_ENGINE" in
   opensearch|elasticsearch8) ;;
   *) die "SEARCH_ENGINE must be 'opensearch' or 'elasticsearch8' (Magento 2.4.9 dropped Elasticsearch 7)." ;;
 esac
+case "$SEARCH_SCHEME" in http|https) ;; *) die "SEARCH_SCHEME must be 'http' or 'https'." ;; esac
+[[ -n "$SEARCH_CA_CERT" && ! -f "$SEARCH_CA_CERT" ]] && die "SEARCH_CA_CERT='$SEARCH_CA_CERT' not found."
+{ [[ -n "$SEARCH_USER" && -z "$SEARCH_PASS" ]] || [[ -z "$SEARCH_USER" && -n "$SEARCH_PASS" ]]; } \
+  && die "Set BOTH SEARCH_USER and SEARCH_PASS, or neither."
 [[ -f "$SCRIPT_DIR/code.tar.gz"    ]] || die "code.tar.gz not found next to this script."
 [[ -f "$SCRIPT_DIR/db.sql.gz"      ]] || die "db.sql.gz not found next to this script."
 [[ -f "$SCRIPT_DIR/env.source.php" ]] || die "env.source.php not found next to this script."
@@ -88,46 +110,28 @@ command -v mysql >/dev/null || die "mysql/mariadb client not found."
 command -v composer >/dev/null && ok "composer present" || warn "composer not found — not required (vendor/ is bundled)."
 
 # ------------------------------------------------------- search engine up? ----
-# Both OpenSearch and Elasticsearch answer a plain GET on :9200 with a JSON
-# banner that includes version.number — we use it to verify reachability AND
-# that the major version matches what Magento 2.4.9 supports.
-search_banner() { curl -s -m 5 "http://$SEARCH_HOST:$SEARCH_PORT/" 2>/dev/null; }
-search_reachable() { curl -s -o /dev/null -m 4 "http://$SEARCH_HOST:$SEARCH_PORT/" 2>/dev/null; }
+# Both OpenSearch and Elasticsearch answer a GET on / with a JSON banner that
+# includes version.number — we use it to verify reachability AND that the major
+# version matches what Magento 2.4.9 supports.
+SEARCH_URL="$SEARCH_SCHEME://$SEARCH_HOST:$SEARCH_PORT/"
+CURL_OPTS=(-s -m 6)
+[[ -n "$SEARCH_USER" ]] && CURL_OPTS+=(-u "$SEARCH_USER:$SEARCH_PASS")
+[[ "$SEARCH_TLS_INSECURE" == "1" ]] && CURL_OPTS+=(-k)
+search_banner()    { curl "${CURL_OPTS[@]}" "$SEARCH_URL" 2>/dev/null; }
+search_reachable() { curl "${CURL_OPTS[@]}" -o /dev/null "$SEARCH_URL" 2>/dev/null; }
 
-install_opensearch() {
-  say "Installing OpenSearch 2.x (single-node, security disabled, localhost only)"
-  $SUDO tee /etc/yum.repos.d/opensearch-2.x.repo >/dev/null <<'REPO'
-[opensearch-2.x]
-name=OpenSearch 2.x
-baseurl=https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.opensearch.org/publickeys/opensearch-release-public-key.pem
-enabled=1
-autorefresh=1
-type=rpm-md
-REPO
-  # 2.12+ requires an initial admin password even though we disable security
-  export OPENSEARCH_INITIAL_ADMIN_PASSWORD="Magento#$(date +%s)Aa1"
-  $SUDO --preserve-env=OPENSEARCH_INITIAL_ADMIN_PASSWORD dnf install -y opensearch
-  $SUDO tee /etc/opensearch/opensearch.yml >/dev/null <<'YML'
-cluster.name: magento
-node.name: magento-node
-network.host: 127.0.0.1
-http.port: 9200
-discovery.type: single-node
-plugins.security.disabled: true
-bootstrap.memory_lock: false
-YML
-  # Keep heap modest for small EC2 boxes; adjust if you have more RAM.
-  $SUDO sed -i -E 's/^-Xms.*/-Xms512m/; s/^-Xmx.*/-Xmx512m/' /etc/opensearch/jvm.options || true
-  $SUDO systemctl daemon-reload
-  $SUDO systemctl enable --now opensearch
-  say "Waiting for OpenSearch to come up"
-  for i in $(seq 1 60); do search_reachable && break; sleep 2; done
-  search_reachable && ok "OpenSearch is up" || die "OpenSearch did not start — check: journalctl -u opensearch"
-}
+# Add a CA cert (e.g. Aiven's project CA) to the OS trust store so BOTH curl
+# and Magento's PHP/curl client validate the managed endpoint's TLS cert.
+if [[ -n "$SEARCH_CA_CERT" ]]; then
+  say "Adding CA cert to system trust store ($SEARCH_CA_CERT)"
+  $SUDO cp "$SEARCH_CA_CERT" /etc/pki/ca-trust/source/anchors/magento-search-ca.pem
+  $SUDO update-ca-trust
+  ok "CA cert trusted system-wide"
+fi
 
-say "Checking search engine ($SEARCH_ENGINE) at $SEARCH_HOST:$SEARCH_PORT"
+# NOTE: this installer never installs a search engine. It expects an external,
+# already-running OpenSearch/Elasticsearch (e.g. Aiven) and only verifies it.
+say "Checking external search engine ($SEARCH_ENGINE) at $SEARCH_URL${SEARCH_USER:+ (auth: $SEARCH_USER)}"
 if search_reachable; then
   SEARCH_VER="$(search_banner | sed -nE 's/.*"number"[[:space:]]*:[[:space:]]*"([0-9]+)\.[0-9].*/\1/p' | head -1)"
   if [[ "$SEARCH_ENGINE" == "elasticsearch8" ]]; then
@@ -136,27 +140,17 @@ if search_reachable; then
     elif [[ -n "$SEARCH_VER" ]]; then
       die "Found Elasticsearch $SEARCH_VER.x, but Magento 2.4.9 needs Elasticsearch 8.x. Upgrade ES, or use OpenSearch (SEARCH_ENGINE=opensearch)."
     else
-      warn "Reachable but could not read version — assuming Elasticsearch 8.x. Verify with: curl $SEARCH_HOST:$SEARCH_PORT"
+      warn "Reachable but could not read version — assuming Elasticsearch 8.x. Verify with: curl $SEARCH_URL"
     fi
   else
     ok "OpenSearch reachable${SEARCH_VER:+ (v$SEARCH_VER)}"
   fi
 else
-  warn "Search engine NOT reachable — Magento 2.4 cannot run without it."
-  if [[ "$SEARCH_ENGINE" == "elasticsearch8" ]]; then
-    die "Start your Elasticsearch (expected at $SEARCH_HOST:$SEARCH_PORT) and re-run. No OpenSearch will be installed for SEARCH_ENGINE=elasticsearch8."
-  fi
-  DO_INSTALL="$INSTALL_OPENSEARCH"
-  if [[ "$DO_INSTALL" == "ask" ]]; then
-    read -r -p "    Install a local single-node OpenSearch now? [y/N] " a
-    [[ "$a" =~ ^[Yy]$ ]] && DO_INSTALL=yes || DO_INSTALL=no
-  fi
-  if [[ "$DO_INSTALL" == "yes" ]]; then
-    [[ "$SEARCH_PORT" != "9200" ]] && warn "Installer configures OpenSearch on port 9200; SEARCH_PORT=$SEARCH_PORT will be ignored."
-    install_opensearch
-  else
-    die "Aborting: install/start a search engine, then re-run (or set INSTALL_OPENSEARCH=yes)."
-  fi
+  warn "Search engine NOT reachable at $SEARCH_URL — Magento 2.4 cannot run without it."
+  echo "    Check: host/port, SEARCH_USER/PASS, firewall/security-group, and TLS."
+  [[ "$SEARCH_SCHEME" == "https" && -z "$SEARCH_CA_CERT" ]] && \
+    echo "    HTTPS without SEARCH_CA_CERT — if the cert is from a private CA (Aiven), pass SEARCH_CA_CERT=./ca.pem."
+  die "Aborting: make the external search endpoint reachable, then re-run."
 fi
 
 # ---------------------------------------------------------- extract code ----
@@ -204,6 +198,7 @@ ok "Database imported"
 # ----------------------------------------------------------- write env.php ----
 say "Writing app/etc/env.php for this box (preserving crypt key)"
 # Reuse crypt key + table prefix from the source so encrypted DB values still decrypt.
+TMP_ENV="$(mktemp)"
 php -r '
   $src = include $argv[1];
   $crypt  = $src["crypt"]["key"] ?? "";
@@ -242,45 +237,82 @@ php -r '
   $out = "<?php\nreturn " . var_export($cfg, true) . ";\n";
   // tidy var_export array() -> [] style is optional; Magento reads either fine.
   file_put_contents($argv[6], $out);
-' "$SCRIPT_DIR/env.source.php" "$DB_HOST" "$DB_NAME" "$DB_USER" "$DB_PASS" "$APP_DIR/app/etc/env.php"
-ok "env.php written (Redis & RabbitMQ removed, OpenSearch kept)"
+' "$SCRIPT_DIR/env.source.php" "$DB_HOST" "$DB_NAME" "$DB_USER" "$DB_PASS" "$TMP_ENV"
+# $APP_DIR/app/etc is owned by root after the tar extraction, so place env.php
+# with sudo; the chown -R below then hands the whole tree to RUN_USER:FILE_GROUP.
+$SUDO install -m 0644 "$TMP_ENV" "$APP_DIR/app/etc/env.php"
+rm -f "$TMP_ENV"
+ok "env.php written (Redis & RabbitMQ removed, external search kept)"
 
-# Point search engine config at this box's OpenSearch (overrides the dump values).
-RUN_AS=( $SUDO -u "$RUN_USER" )
+# How to run bin/magento as the web user — works whether this script is invoked
+# as root or as a sudo-capable user (e.g. ec2-user). If we already ARE the web
+# user, run directly; otherwise drop privileges via sudo -u.
+set_run_as() {
+  if [[ "$(id -un)" == "$RUN_USER" ]]; then RUN_AS=(); else RUN_AS=(sudo -u "$RUN_USER"); fi
+}
+set_run_as
 php_bin() { ( cd "$APP_DIR" && "${RUN_AS[@]}" php bin/magento "$@" ); }
 
 # ----------------------------------------------------------- permissions ----
-say "Setting ownership to '$RUN_USER' and permissions"
-id "$RUN_USER" >/dev/null 2>&1 || { warn "User '$RUN_USER' not found — falling back to $(whoami)"; RUN_USER="$(whoami)"; RUN_AS=(); }
-$SUDO chown -R "$RUN_USER":"$RUN_USER" "$APP_DIR"
+say "Setting ownership to '$RUN_USER:$FILE_GROUP' and permissions on the whole tree"
+id "$RUN_USER" >/dev/null 2>&1 || die "OS user '$RUN_USER' does not exist. Create it (e.g. 'sudo useradd -M -s /sbin/nologin $RUN_USER') or pass RUN_USER=<existing user>."
+getent group "$FILE_GROUP" >/dev/null 2>&1 || die "Group '$FILE_GROUP' does not exist. Create it or pass FILE_GROUP=<existing group>."
+set_run_as
+# Hand EVERY extracted file (incl. env.php, var/, generated/, pub/) to the
+# Magento owner + web group. Group-writable so PHP-FPM can write var/, pub/static,
+# generated/ and pub/media; setgid on dirs keeps new files in the right group.
+$SUDO chown -R "$RUN_USER":"$FILE_GROUP" "$APP_DIR"
 $SUDO find "$APP_DIR" -type d -exec chmod 2775 {} \; 2>/dev/null || true
 $SUDO find "$APP_DIR" -type f -exec chmod 0664 {} \; 2>/dev/null || true
 $SUDO chmod +x "$APP_DIR/bin/magento"
-ok "Permissions set"
+ok "Ownership set to $RUN_USER:$FILE_GROUP (verified below after Magento runs)"
 
 # --------------------------------------------------- base url + search cfg ----
-say "Configuring base URL and search engine ($SEARCH_ENGINE @ $SEARCH_HOST:$SEARCH_PORT)"
+say "Configuring base URL and search engine ($SEARCH_ENGINE @ $SEARCH_URL)"
+# Magento derives the protocol from the hostname, so store the scheme with it
+# (e.g. https://xxx.aivencloud.com). For plain local http this is harmless.
+SEARCH_HOST_CFG="$SEARCH_SCHEME://$SEARCH_HOST"
+ENABLE_AUTH=0; [[ -n "$SEARCH_USER" ]] && ENABLE_AUTH=1
+# SQL-escape single quotes in the password.
+ESC_PASS="${SEARCH_PASS//\'/\'\'}"
 "${MYSQL_ROOT[@]}" "$DB_NAME" <<SQL
 UPDATE core_config_data SET value='$BASE_URL' WHERE path IN ('web/unsecure/base_url','web/secure/base_url');
 DELETE FROM core_config_data WHERE path IN ('web/cookie/cookie_domain','web/secure/use_in_frontend','web/secure/use_in_adminhtml');
 INSERT INTO core_config_data (scope,scope_id,path,value) VALUES
   ('default',0,'catalog/search/engine','$SEARCH_ENGINE'),
-  ('default',0,'catalog/search/${SEARCH_ENGINE}_server_hostname','$SEARCH_HOST'),
+  ('default',0,'catalog/search/${SEARCH_ENGINE}_server_hostname','$SEARCH_HOST_CFG'),
   ('default',0,'catalog/search/${SEARCH_ENGINE}_server_port','$SEARCH_PORT'),
-  ('default',0,'catalog/search/${SEARCH_ENGINE}_enable_auth','0')
+  ('default',0,'catalog/search/${SEARCH_ENGINE}_enable_auth','$ENABLE_AUTH'),
+  ('default',0,'catalog/search/${SEARCH_ENGINE}_username','$SEARCH_USER'),
+  ('default',0,'catalog/search/${SEARCH_ENGINE}_password','$ESC_PASS')
 ON DUPLICATE KEY UPDATE value=VALUES(value);
-DELETE FROM core_config_data WHERE path='catalog/search/${SEARCH_ENGINE}_server_password';
 SQL
-ok "Base URL set to $BASE_URL; search engine set to $SEARCH_ENGINE"
+if [[ -n "$SEARCH_INDEX_PREFIX" ]]; then
+  "${MYSQL_ROOT[@]}" "$DB_NAME" -e "INSERT INTO core_config_data (scope,scope_id,path,value) VALUES ('default',0,'catalog/search/${SEARCH_ENGINE}_index_prefix','$SEARCH_INDEX_PREFIX') ON DUPLICATE KEY UPDATE value=VALUES(value);"
+fi
+ok "Base URL set to $BASE_URL; search engine set to $SEARCH_ENGINE (auth=$ENABLE_AUTH)"
 
 # ------------------------------------------------------------ magento init ----
 say "Running setup:upgrade (schema + DI for the migrated modules)"
 php_bin setup:upgrade
 say "Compiling DI is skipped (MAGE_MODE=default generates on demand)."
 say "Reindexing"
-php_bin indexer:reindex || warn "Reindex reported issues — re-run after confirming OpenSearch is healthy."
+php_bin indexer:reindex || warn "Reindex reported issues — re-run after confirming the search engine is reachable."
 say "Flushing cache"
 php_bin cache:flush
+
+# ------------------------------------------------- re-assert ownership ----
+# setup:upgrade / reindex (run as $RUN_USER) created files in var/, generated/,
+# pub/static, app/etc/config.php. Re-apply ownership so the ENTIRE tree is
+# guaranteed $RUN_USER:$FILE_GROUP, then verify nothing slipped through.
+say "Re-asserting ownership on files Magento just generated"
+$SUDO chown -R "$RUN_USER":"$FILE_GROUP" "$APP_DIR"
+STRAY="$($SUDO find "$APP_DIR" \( ! -user "$RUN_USER" -o ! -group "$FILE_GROUP" \) -print -quit 2>/dev/null)"
+if [[ -z "$STRAY" ]]; then
+  ok "Verified: every file under $APP_DIR is owned by $RUN_USER:$FILE_GROUP"
+else
+  warn "Some files are NOT $RUN_USER:$FILE_GROUP (first: $STRAY). Inspect with: find $APP_DIR ! -user $RUN_USER -o ! -group $FILE_GROUP"
+fi
 
 # --------------------------------------------------------------- finish ----
 cat <<DONE
@@ -304,6 +336,6 @@ cat <<DONE
   5. Security: delete the migration bundle — it holds the DB + crypt key.
 
  If the storefront 500s on first hit, check $APP_DIR/var/log/ and
- confirm the search engine ($SEARCH_ENGINE @ $SEARCH_HOST:$SEARCH_PORT) is reachable.
+ confirm the search engine ($SEARCH_ENGINE @ $SEARCH_URL) is reachable.
 ==================================================================
 DONE

@@ -18,13 +18,14 @@ und die Medien. Ein Installer richtet alles auf der EC2 ein.
 
 - **PHP 8.4** mit den üblichen Magento-Extensions (`intl`, `gd`, `pdo_mysql`, `bcmath`, `soap`, `xsl`, `sodium`, `zip`, …) ✅ (hast du)
 - **MariaDB** läuft, root per `sudo mysql` erreichbar ✅ (hast du)
-- **Suchmaschine** – Magento 2.4 läuft **nicht** ohne. Magento **2.4.9 unterstützt
-  nur `elasticsearch8` oder `opensearch`** (Elasticsearch 7 wurde entfernt!).
-  - Hast du bereits **Elasticsearch 8.x** auf der Box → mit
-    `SEARCH_ENGINE=elasticsearch8` nutzen, der Installer installiert dann **kein**
-    OpenSearch (kein Port-Konflikt). Der Installer prüft die ES-Version vorab.
-  - Sonst kann der Installer ein lokales Single-Node-**OpenSearch** installieren
-    (fragt nach).
+- **Externe Suchmaschine** – Magento 2.4 läuft **nicht** ohne. Magento **2.4.9
+  unterstützt nur `elasticsearch8` oder `opensearch`** (Elasticsearch 7 wurde
+  entfernt). **Der Installer installiert selbst keine Suchmaschine** – er zeigt
+  Magento auf deinen externen Dienst (z. B. **OpenSearch bei Aiven**) und prüft
+  nur die Erreichbarkeit. Deine lokale Elasticsearch 7 bleibt damit komplett
+  unberührt (kein Port-Konflikt, kein RAM-Verbrauch). Siehe Abschnitt unten.
+- **Datei-Owner** – alle Dateien im Zielverzeichnis werden auf `RUN_USER:FILE_GROUP`
+  gesetzt (z. B. `magento:apache`). Beide müssen auf der EC2 existieren.
 - Web-Server (nginx oder Apache) + PHP-FPM – richtest du nach dem Installer ein.
 - Empfehlung: ≥ 4 GB RAM (OpenSearch + MariaDB + PHP-FPM auf einer Box).
 
@@ -47,20 +48,54 @@ und die Medien. Ein Installer richtet alles auf der EC2 ein.
    `BASE_URL` ist Pflicht (öffentliche URL/IP deines Shops). Alles andere hat
    sinnvolle Defaults – siehe `./install-on-ec2.sh --help`.
 
-   **Mit deiner bestehenden Elasticsearch 8.x** (kein OpenSearch, kein Konflikt):
+   **Dein Setup: externe OpenSearch bei Aiven, Dateien als `magento:apache`:**
    ```bash
    BASE_URL=http://<EC2_IP>/ \
-   SEARCH_ENGINE=elasticsearch8 SEARCH_HOST=localhost SEARCH_PORT=9200 \
+   RUN_USER=magento FILE_GROUP=apache \
+   SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \
+   SEARCH_HOST=<service>.aivencloud.com SEARCH_PORT=<port> \
+   SEARCH_USER=avnadmin SEARCH_PASS=<pass> SEARCH_CA_CERT=./aiven-ca.pem \
    ./install-on-ec2.sh
    ```
+
+Alle Variablen: `./install-on-ec2.sh --help`. **Der Installer installiert keine
+Suchmaschine** – er nutzt deinen externen Dienst und prüft nur die Erreichbarkeit.
+
+## Managed OpenSearch über Aiven (Free-Tier) einrichten
+
+Passt zu deinem Fall: lokale **Elasticsearch 7** bleibt unverändert, Magento nutzt
+eine getrennte, externe OpenSearch.
+
+1. Bei [aiven.io](https://aiven.io) ein **OpenSearch**-Service anlegen
+   (Free-/Hobbyist-Plan, Region nahe der EC2). Warten bis „Running“.
+   > Free-Tier vorher kurz prüfen: Plan-Größe/Retention reichen für einen
+   > Demo-Magento locker; Magento legt nur eine Handvoll Indizes an.
+2. Im Aiven-Dashboard unter **Connection information** notieren:
+   `Host`, `Port`, `User` (meist `avnadmin`), `Password`. Und die
+   **CA-Zertifikatsdatei** (`ca.pem`) herunterladen.
+3. `ca.pem` neben den Installer legen (z. B. als `aiven-ca.pem`) und den
+   Installer mit dem OpenSearch-Beispiel oben starten.
+
+**Warum `SEARCH_CA_CERT`?** Aiven signiert das TLS-Zertifikat mit einer eigenen
+Projekt-CA. Magentos OpenSearch-Client verifiziert TLS gegen den System-Trust-Store
+und bietet keine Option, das abzuschalten. Der Installer legt deine `ca.pem` daher
+in den System-Trust-Store der EC2 (`update-ca-trust`) — danach vertrauen sowohl die
+Vorab-Prüfung als auch Magento dem Zertifikat. Hat Aiven ein öffentlich vertrautes
+Zertifikat, kannst du `SEARCH_CA_CERT` weglassen.
+
+> Tipp: Erst testen mit
+> `curl -u avnadmin:<pass> --cacert aiven-ca.pem https://<host>:<port>/`
+> — kommt eine JSON-Antwort mit `"distribution":"opensearch"`, passt alles.
 
    Beispiel mit allen Werten:
    ```bash
    APP_DIR=/var/www/magento \
    BASE_URL=https://shop.example.com/ \
    DB_NAME=magento DB_USER=magento DB_PASS=geheim \
-   RUN_USER=nginx \
-   SEARCH_ENGINE=elasticsearch8 SEARCH_HOST=localhost SEARCH_PORT=9200 \
+   RUN_USER=magento FILE_GROUP=apache \
+   SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \
+   SEARCH_HOST=<service>.aivencloud.com SEARCH_PORT=<port> \
+   SEARCH_USER=avnadmin SEARCH_PASS=<pass> SEARCH_CA_CERT=./aiven-ca.pem \
    ./install-on-ec2.sh
    ```
 
@@ -80,9 +115,13 @@ Server-Einrichtung abhängen:
    set $MAGE_ROOT /var/www/magento;
    include /var/www/magento/nginx.conf.sample;
    ```
-2. **PHP-FPM**: läuft als `nginx` (oder `apache`) und ist gestartet.
-3. **Cron** (empfohlen, sonst keine Index-/Mail-/Queue-Jobs):
+2. **PHP-FPM**: läuft als `apache` (bzw. dein `RUN_USER`) und ist gestartet.
+   Der Pool-User sollte zur `FILE_GROUP` passen, damit er in `var/`, `generated/`,
+   `pub/static` und `pub/media` schreiben darf (das Skript setzt diese
+   gruppen-schreibbar + setgid).
+3. **Cron** (empfohlen, sonst keine Index-/Mail-/Queue-Jobs) – als `RUN_USER`:
    ```bash
+   sudo -u magento crontab -l   # prüfen
    * * * * * php /var/www/magento/bin/magento cron:run >> /var/www/magento/var/log/cron.log 2>&1
    ```
 4. **Security Group / Firewall** für HTTP(S) öffnen.
