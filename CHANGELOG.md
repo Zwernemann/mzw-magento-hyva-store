@@ -1,3 +1,23 @@
+# Changelog
+
+## 1.0.0 (2026-06-03)
+
+
+### Features
+
+* add ConversationalCommerce module and EC2 migration tooling ([8c6d5d1](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/8c6d5d1c4c29cfbb71e44a1e5a84cfd80915fb91))
+* add Lacke & Elektro demo catalog with B2B Hyvä theme ([8c13843](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/8c138432879c023987e967dd86a4f86263b6b860))
+* add portable self-contained magento-export.sh exporter ([dea8e57](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/dea8e57a8e20941ec3ac983a87a395fd8c35ad5b))
+* target external OpenSearch and enforce magento:apache ownership in EC2 installer ([df944af](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/df944af5f6bdae7864825716fbe510073b90ad50))
+
+
+### Bug Fixes
+
+* drop CA cert from default Aiven OpenSearch path in EC2 installer ([c2154ee](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/c2154eee9234fc6f66262a068bc69a08ec8e2af2))
+* harden EC2 installer DB setup to never clobber or shadow existing users ([2f74e36](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/2f74e36b7a8df2418ac0fb6b793924d848d2c407))
+* restore pub/static/.htaccess in installer so static assets serve ([af2d6df](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/af2d6df19a710e8b3a2353ab8011a74a2b70ee04))
+* run Magento PHP with memory_limit=-1 to avoid OOM aborts on EC2 ([9fc81d7](https://github.com/Zwernemann/mzw-magento-hyva-store/commit/9fc81d7291c2a46879d02a285bb52100e5efbd4e))
+
 2.4.0
 =============
 * GitHub issues:
