@@ -148,6 +148,20 @@ Server-Einrichtung abhängen:
 
 ## Troubleshooting
 
+- **Alle Styles fehlen / `/static/...` liefert 404 (MIME-Fehler `text/html`)** →
+  Magento findet/generiert die Static-Assets nicht.
+  - **Apache:** `pub/static/.htaccess` muss existieren (strippt das `version…/`
+    und leitet auf `static.php`). Der Installer stellt sie aus `vendor/` wieder
+    her; falls doch leer:
+    ```bash
+    sudo -u magento cp vendor/magento/magento2-base/pub/static/.htaccess pub/static/.htaccess
+    sudo -u magento php bin/magento cache:flush
+    ```
+    Außerdem braucht das `pub/`-Verzeichnis `AllowOverride All` + `mod_rewrite`.
+  - **nginx:** den `include …/nginx.conf.sample;`-Block einbinden (macht dasselbe
+    ohne `.htaccess`).
+  - Alternativ Assets fest deployen statt on-demand:
+    `sudo -u magento php bin/magento setup:static-content:deploy -f en_US de_DE`.
 - **Storefront 500 beim ersten Aufruf** → `var/log/` prüfen; meist ist
   OpenSearch noch nicht erreichbar oder die Rechte stimmen nicht.
 - **„Could not validate a connection to Elasticsearch/OpenSearch“** →

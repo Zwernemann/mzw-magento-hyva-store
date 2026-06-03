@@ -162,6 +162,12 @@ say "Extracting code + media into $APP_DIR"
 $SUDO mkdir -p "$APP_DIR"
 $SUDO tar xzf "$SCRIPT_DIR/code.tar.gz" -C "$APP_DIR"
 $SUDO mkdir -p "$APP_DIR/var" "$APP_DIR/generated" "$APP_DIR/pub/static"
+# pub/static is excluded from the bundle (regenerated on demand), but its
+# .htaccess is what tells Apache to strip the version/ prefix and fall back to
+# static.php. Without it every /static/ URL 404s. Restore it from vendor.
+if [[ ! -f "$APP_DIR/pub/static/.htaccess" && -f "$APP_DIR/vendor/magento/magento2-base/pub/static/.htaccess" ]]; then
+  $SUDO cp "$APP_DIR/vendor/magento/magento2-base/pub/static/.htaccess" "$APP_DIR/pub/static/.htaccess"
+fi
 ok "Code extracted"
 
 # --------------------------------------------------------------- database ----

@@ -229,6 +229,12 @@ say "Extracting code + media into $APP_DIR"
 $SUDO mkdir -p "$APP_DIR"
 $SUDO tar xzf "$SCRIPT_DIR/code.tar.gz" -C "$APP_DIR"
 $SUDO mkdir -p "$APP_DIR/var" "$APP_DIR/generated" "$APP_DIR/pub/static"
+# pub/static is excluded from the bundle (regenerated on demand), but its
+# .htaccess is what tells Apache to strip the version/ prefix and fall back to
+# static.php. Without it every /static/ URL 404s. Restore it from vendor.
+if [[ ! -f "$APP_DIR/pub/static/.htaccess" && -f "$APP_DIR/vendor/magento/magento2-base/pub/static/.htaccess" ]]; then
+  $SUDO cp "$APP_DIR/vendor/magento/magento2-base/pub/static/.htaccess" "$APP_DIR/pub/static/.htaccess"
+fi
 ok "Code extracted"
 
 # --------------------------------------------------------------- database ----
@@ -563,6 +569,20 @@ Server-Einrichtung abhängen:
 
 ## Troubleshooting
 
+- **Alle Styles fehlen / `/static/...` liefert 404 (MIME-Fehler `text/html`)** →
+  Magento findet/generiert die Static-Assets nicht.
+  - **Apache:** `pub/static/.htaccess` muss existieren (strippt das `version…/`
+    und leitet auf `static.php`). Der Installer stellt sie aus `vendor/` wieder
+    her; falls doch leer:
+    ```bash
+    sudo -u magento cp vendor/magento/magento2-base/pub/static/.htaccess pub/static/.htaccess
+    sudo -u magento php bin/magento cache:flush
+    ```
+    Außerdem braucht das `pub/`-Verzeichnis `AllowOverride All` + `mod_rewrite`.
+  - **nginx:** den `include …/nginx.conf.sample;`-Block einbinden (macht dasselbe
+    ohne `.htaccess`).
+  - Alternativ Assets fest deployen statt on-demand:
+    `sudo -u magento php bin/magento setup:static-content:deploy -f en_US de_DE`.
 - **Storefront 500 beim ersten Aufruf** → `var/log/` prüfen; meist ist
   OpenSearch noch nicht erreichbar oder die Rechte stimmen nicht.
 - **„Could not validate a connection to Elasticsearch/OpenSearch“** →
