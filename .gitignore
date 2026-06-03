@@ -74,3 +74,12 @@ atlassian*
 
 # Composer auth (private credentials)
 auth.json
+
+# EC2 migration bundles (contain full DB dump + crypt key — never commit)
+/magento-migrate-*.tar.gz
+
+# Local DB/media backups & export archives (data, not source — never commit)
+/backup.sql
+/media.tar.gz
+/appcode.tar.gz
+/appdesign.tar.gz

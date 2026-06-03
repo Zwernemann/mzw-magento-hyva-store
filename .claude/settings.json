@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql *)",
+      "Bash(MYSQL_PWD=magento mysql *)",
+      "Bash(bin/magento config:show *)",
+      "Bash(bin/magento module:status *)",
+      "Bash(curl -s *)",
+      "Bash(curl -sv *)",
+      "Bash(curl -sk *)",
+      "Bash(unzip -l *)",
+      "Bash(unzip -p *)"
+    ]
+  }
+}

@@ -1,0 +1,124 @@
+<?php
+/** @var \Zwernemann\ConversationalCommerce\Block\Adminhtml\Privacy\Index $block */
+?>
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('DSGVO – Recht auf Löschung (Art. 17)')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+
+        <p style="max-width:720px;">
+            <?= $block->escapeHtml(__('Auf Kundenwunsch können alle Gesprächsdaten einer E-Mail-Adresse unwiderruflich anonymisiert werden. Dabei wird die E-Mail-Adresse durch einen Hash ersetzt, der Nachrichteninhalt gelöscht und alle Alias-Adressen entfernt. Konversations-Metadaten (Kanal, Zeitstempel) bleiben für interne Auswertungen erhalten.')) ?>
+        </p>
+
+        <div id="cc-gdpr-result" style="display:none;margin:12px 0;padding:10px 16px;border-radius:3px;max-width:640px;"></div>
+
+        <!-- Anonymisierung nach E-Mail-Adresse -->
+        <fieldset class="admin__fieldset" style="max-width:640px;margin-bottom:2.5rem;">
+            <legend class="admin__legend">
+                <span><?= $block->escapeHtml(__('Alle Gespräche einer E-Mail-Adresse löschen')) ?></span>
+            </legend>
+
+            <div class="admin__field _required">
+                <label class="admin__field-label" for="cc-gdpr-email">
+                    <?= $block->escapeHtml(__('Kunden-E-Mail-Adresse')) ?>
+                </label>
+                <div class="admin__field-control">
+                    <input type="email" id="cc-gdpr-email" class="admin__control-text"
+                           placeholder="kunde@firma.de" style="max-width:360px;"/>
+                    <p class="admin__field-note">
+                        <?= $block->escapeHtml(__('Alle Konversationen dieser Adresse (inkl. Alias-Adressen) werden anonymisiert.')) ?>
+                    </p>
+                </div>
+            </div>
+
+            <div class="admin__field">
+                <div class="admin__field-control">
+                    <button type="button" id="cc-gdpr-btn-email"
+                            class="action-default scalable save primary">
+                        <?= $block->escapeHtml(__('Daten anonymisieren')) ?>
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Anonymisierung nach Konversations-ID -->
+        <fieldset class="admin__fieldset" style="max-width:640px;">
+            <legend class="admin__legend">
+                <span><?= $block->escapeHtml(__('Einzelne Konversation löschen')) ?></span>
+            </legend>
+
+            <div class="admin__field _required">
+                <label class="admin__field-label" for="cc-gdpr-conv-id">
+                    <?= $block->escapeHtml(__('Konversations-ID')) ?>
+                </label>
+                <div class="admin__field-control">
+                    <input type="number" id="cc-gdpr-conv-id" class="admin__control-text"
+                           placeholder="42" min="1" style="max-width:180px;"/>
+                    <p class="admin__field-note">
+                        <?= $block->escapeHtml(__('Die ID ist in der Konversationsliste sichtbar.')) ?>
+                    </p>
+                </div>
+            </div>
+
+            <div class="admin__field">
+                <div class="admin__field-control">
+                    <button type="button" id="cc-gdpr-btn-conv"
+                            class="action-default scalable">
+                        <?= $block->escapeHtml(__('Konversation anonymisieren')) ?>
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    var actionUrl = '<?= $block->escapeJs($block->getAnonymizeUrl()) ?>';
+    var formKey   = document.querySelector('input[name="form_key"]')
+                    ? document.querySelector('input[name="form_key"]').value
+                    : '';
+
+    function showResult(message, success) {
+        var el = document.getElementById('cc-gdpr-result');
+        el.textContent = message;
+        el.style.display = 'block';
+        el.style.background = success ? '#d4edda' : '#f8d7da';
+        el.style.border     = '1px solid ' + (success ? '#c3e6cb' : '#f5c6cb');
+        el.style.color      = success ? '#155724' : '#721c24';
+        window.scrollTo(0, el.offsetTop - 20);
+    }
+
+    function doRequest(params) {
+        params.form_key = formKey;
+        var body = Object.keys(params)
+            .map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
+            .join('&');
+
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: body
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){ showResult(data.message, data.success); })
+        .catch(function(e){ showResult('Fehler: ' + e.message, false); });
+    }
+
+    document.getElementById('cc-gdpr-btn-email').addEventListener('click', function () {
+        var email = document.getElementById('cc-gdpr-email').value.trim();
+        if (!email) { showResult('<?= $block->escapeJs(__('Bitte E-Mail-Adresse eingeben.')) ?>', false); return; }
+        if (!confirm('<?= $block->escapeJs(__('Alle Gesprächsdaten für diese E-Mail-Adresse unwiderruflich anonymisieren?')) ?>')) return;
+        doRequest({email: email});
+    });
+
+    document.getElementById('cc-gdpr-btn-conv').addEventListener('click', function () {
+        var id = document.getElementById('cc-gdpr-conv-id').value.trim();
+        if (!id || parseInt(id) < 1) { showResult('<?= $block->escapeJs(__('Bitte eine gültige Konversations-ID eingeben.')) ?>', false); return; }
+        if (!confirm('<?= $block->escapeJs(__('Diese Konversation unwiderruflich anonymisieren?')) ?>')) return;
+        doRequest({conversation_id: id});
+    });
+}());
+</script>

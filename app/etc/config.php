@@ -60,7 +60,7 @@ return [
         'Magento_CmsUrlRewrite' => 1,
         'Magento_CmsUrlRewriteGraphQl' => 1,
         'Magento_CatalogGraphQl' => 1,
-        'Magento_TwoFactorAuth' => 1,
+        'Magento_TwoFactorAuth' => 0,
         'Magento_Sales' => 1,
         'Magento_Checkout' => 1,
         'Magento_QuoteGraphQl' => 1,
@@ -340,7 +340,7 @@ return [
         'Magento_InventoryGraphQl' => 1,
         'Magento_ThemeGraphQl' => 1,
         'Magento_Translation' => 1,
-        'Magento_AdminAdobeImsTwoFactorAuth' => 1,
+        'Magento_AdminAdobeImsTwoFactorAuth' => 0,
         'Magento_GoogleOptimizer' => 1,
         'Magento_Ups' => 1,
         'Magento_SampleData' => 1,
@@ -377,13 +377,19 @@ return [
         'PayPal_BraintreeGiftCardAccount' => 1,
         'PayPal_BraintreeGiftWrapping' => 1,
         'PayPal_BraintreeGraphQl' => 1,
-        'PayPal_BraintreeReward' => 1
+        'PayPal_BraintreeReward' => 1,
+        'Zwernemann_ConversationalCommerce' => 1
     ],
     'system' => [
         'default' => [
             'design' => [
                 'theme' => [
                     'theme_id' => 'Demo/default'
+                ]
+            ],
+            'hyva_theme_general' => [
+                'demo_content' => [
+                    'show_homepage_demo_content' => '0'
                 ]
             ]
         ]

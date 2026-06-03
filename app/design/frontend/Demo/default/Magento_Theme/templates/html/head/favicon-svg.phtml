@@ -1,0 +1,13 @@
+<?php
+/**
+ * SVG favicon link for the demo shop (crisp brand emblem on modern browsers).
+ * Output via a template instead of a <link> head directive because Magento
+ * classifies .svg assets as fonts and would emit a bogus font-preload instead.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+?>
+<link rel="icon" type="image/svg+xml"
+      href="<?= $escaper->escapeUrl($block->getViewFileUrl('Magento_Theme::favicon.svg')) ?>"/>

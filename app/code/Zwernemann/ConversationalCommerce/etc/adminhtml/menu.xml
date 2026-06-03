@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Zwernemann_ConversationalCommerce::main"
+             title="Conversational Commerce"
+             module="Zwernemann_ConversationalCommerce"
+             sortOrder="90"
+             resource="Zwernemann_ConversationalCommerce::conversations"
+             parent="Magento_Sales::sales"/>
+
+        <add id="Zwernemann_ConversationalCommerce::dashboard"
+             title="Dashboard"
+             module="Zwernemann_ConversationalCommerce"
+             sortOrder="5"
+             action="conversationalcommerce/dashboard/index"
+             resource="Zwernemann_ConversationalCommerce::dashboard"
+             parent="Zwernemann_ConversationalCommerce::main"/>
+
+        <add id="Zwernemann_ConversationalCommerce::conversations"
+             title="Conversations"
+             module="Zwernemann_ConversationalCommerce"
+             sortOrder="10"
+             action="conversationalcommerce/index/index"
+             resource="Zwernemann_ConversationalCommerce::conversations"
+             parent="Zwernemann_ConversationalCommerce::main"/>
+
+        <add id="Zwernemann_ConversationalCommerce::aliases"
+             title="Customer Email Aliases"
+             module="Zwernemann_ConversationalCommerce"
+             sortOrder="20"
+             action="conversationalcommerce/aliases/index"
+             resource="Zwernemann_ConversationalCommerce::aliases"
+             parent="Zwernemann_ConversationalCommerce::main"/>
+
+        <add id="Zwernemann_ConversationalCommerce::privacy"
+             title="DSGVO – Datenlöschung"
+             module="Zwernemann_ConversationalCommerce"
+             sortOrder="30"
+             action="conversationalcommerce/privacy/index"
+             resource="Zwernemann_ConversationalCommerce::privacy"
+             parent="Zwernemann_ConversationalCommerce::main"/>
+    </menu>
+</config>

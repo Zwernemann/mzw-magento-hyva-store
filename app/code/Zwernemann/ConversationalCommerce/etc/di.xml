@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- API Interface Preferences -->
+    <preference for="Zwernemann\ConversationalCommerce\Api\MessageProcessorInterface"
+                type="Zwernemann\ConversationalCommerce\Model\MessageProcessor"/>
+
+    <!-- Shop-system adapter layer: swap these preferences to migrate to a different platform -->
+    <preference for="Zwernemann\ConversationalCommerce\Api\Shop\CustomerProviderInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Magento\CustomerLookup"/>
+    <preference for="Zwernemann\ConversationalCommerce\Api\Shop\ProductLookupInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Magento\ProductSearch"/>
+    <preference for="Zwernemann\ConversationalCommerce\Api\Shop\OrderHistoryInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Magento\OrderHistory"/>
+    <preference for="Zwernemann\ConversationalCommerce\Api\Shop\CartServiceInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Magento\CartManager"/>
+
+    <!-- Conversation Repository -->
+    <preference for="Zwernemann\ConversationalCommerce\Api\Data\ConversationRepositoryInterface"
+                type="Zwernemann\ConversationalCommerce\Model\ConversationRepository"/>
+
+    <!-- LLM Provider: LlmClientResolver implements the interface and delegates to the active provider -->
+    <preference for="Zwernemann\ConversationalCommerce\Api\LlmClientInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Llm\LlmClientResolver"/>
+
+    <preference for="Zwernemann\ConversationalCommerce\Api\InboundApiInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Api\InboundProcessor"/>
+    <preference for="Zwernemann\ConversationalCommerce\Api\Data\InboundRequestInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Api\InboundRequest"/>
+    <preference for="Zwernemann\ConversationalCommerce\Api\Data\InboundResponseInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Api\InboundResponse"/>
+
+    <preference for="Zwernemann\ConversationalCommerce\Api\Data\UnifiedMessageInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Message\UnifiedMessage"/>
+
+    <preference for="Zwernemann\ConversationalCommerce\Api\Data\ConversationInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Conversation"/>
+
+    <preference for="Zwernemann\ConversationalCommerce\Api\GdprServiceInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Privacy\GdprService"/>
+
+    <preference for="Zwernemann\ConversationalCommerce\Api\CustomerPrivacyInterface"
+                type="Zwernemann\ConversationalCommerce\Model\Privacy\CustomerPrivacyService"/>
+
+    <!-- Custom logger: writes to var/log/conversationalcommerce.log -->
+    <type name="Zwernemann\ConversationalCommerce\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">conversationalcommerce</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="cc" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Inject CC logger into every pipeline class -->
+    <type name="Zwernemann\ConversationalCommerce\Model\Attachment\AttachmentProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\MessageProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+            <argument name="attachmentProcessor" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Attachment\AttachmentProcessor</argument>
+            <argument name="queryBuilder" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Rag\ConversationalQueryBuilder</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Rag\ConversationalQueryBuilder">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Llm\ContextBuilder">
+        <arguments>
+            <argument name="toolRegistry" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Llm\MagentoToolRegistry</argument>
+        </arguments>
+    </type>
+    <!-- LLM provider pool: maps provider names to their client implementations -->
+    <type name="Zwernemann\ConversationalCommerce\Model\Llm\LlmClientResolver">
+        <arguments>
+            <argument name="clients" xsi:type="array">
+                <item name="anthropic" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Llm\AnthropicClient</item>
+                <item name="mistral"   xsi:type="object">Zwernemann\ConversationalCommerce\Model\Llm\MistralClient</item>
+            </argument>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Llm\AnthropicClient">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Llm\MistralClient">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Llm\IntentProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Rag\SearchTermExtractor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Rag\ProductIndexer">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+            <argument name="configurableType" xsi:type="object">Magento\ConfigurableProduct\Model\Product\Type\Configurable</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Rag\VoyageClient">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Rag\PineconeClient">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\CatalogSearch">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\CustomerLookup">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\CartManager">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+            <argument name="configurableType" xsi:type="object">Magento\ConfigurableProduct\Model\Product\Type\Configurable</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\OrderHistory">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\ProductSearch">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Pipeline\CartActionHandler">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Pipeline\MagentoToolExecutor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\MessageProcessor">
+        <arguments>
+            <argument name="toolExecutor" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Pipeline\MagentoToolExecutor</argument>
+            <argument name="paymentInfoProvider" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Magento\PaymentInfoProvider</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Magento\PaymentInfoProvider">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Channel\Email\EmailChannel">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <!-- Channel map: routes outbound responses to the correct channel implementation -->
+    <type name="Zwernemann\ConversationalCommerce\Model\MessageProcessor">
+        <arguments>
+            <argument name="channels" xsi:type="array">
+                <item name="email" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Channel\Email\EmailChannel</item>
+                <item name="webchat" xsi:type="object">Zwernemann\ConversationalCommerce\Model\Channel\WebChat\WebChatChannel</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Zwernemann\ConversationalCommerce\Controller\Message\Send">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Channel\Email\MailPoller">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Channel\Email\MailSender">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Model\Api\InboundProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Zwernemann\ConversationalCommerce\Cron\PollIncomingMail">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Zwernemann\ConversationalCommerce\Cron\IndexProducts">
+        <arguments>
+            <argument name="logger" xsi:type="object">Zwernemann\ConversationalCommerce\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <!-- CLI Commands -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="cc_index_products" xsi:type="object">
+                    Zwernemann\ConversationalCommerce\Console\Command\IndexProductsCommand
+                </item>
+                <item name="cc_poll_mail" xsi:type="object">
+                    Zwernemann\ConversationalCommerce\Console\Command\PollMailCommand
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>
