@@ -4,6 +4,11 @@ Dieses Bündel enthält deinen kompletten, lauffähigen Magento-Shop:
 Code + `vendor/` (kein Composer/Hyvä-Login nötig), die komplette Datenbank
 und die Medien. Ein Installer richtet alles auf der EC2 ein.
 
+> **Bündel erzeugen (im Codespace):** Das portable Tool `magento-export.sh`
+> ausführen — es erkennt die Magento-Root automatisch, dumpt die DB und erzeugt
+> genau dieses Bündel (inkl. diesem Installer). Eine einzige Datei, in jeden
+> Magento-Codespace kopierbar.
+
 ## Inhalt des Bündels
 
 | Datei | Inhalt |
