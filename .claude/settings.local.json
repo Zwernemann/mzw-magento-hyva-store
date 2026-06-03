@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.alles-im-lackshop.de)",
+      "Bash(mkdir -p app/design/frontend/Demo/default/Magento_Theme/web)",
+      "Bash(php -r '$i=gd_info\\(\\); echo \\($i[\"FreeType Support\"]?\"yes\":\"no\"\\),\"\\\\n\";')",
+      "Bash(php /tmp/gen_favicon.php)",
+      "Bash(bin/magento deploy:mode:show)",
+      "Bash(bin/magento cache:clean layout block_html full_page)",
+      "Bash(curl -sk https://__TRACKED_VAR__/)",
+      "Bash(curl -s -o /tmp/h.html -w 'code=%{http_code} size=%{size_download}\\\\n' --resolve __TRACKED_VAR__:8000:127.0.0.1 http://__TRACKED_VAR__:8000/)",
+      "Bash(getent hosts *)",
+      "Bash(curl -s -o /tmp/h2.html -w 'code=%{http_code} size=%{size_download} url=%{url_effective}\\\\n' -L http://nginx:8000/ -H 'Host: __TRACKED_VAR__')",
+      "Bash(curl -s -o /tmp/h.html -w 'code=%{http_code} size=%{size_download}\\\\n' http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https' -H 'X-Forwarded-For: 127.0.0.1')",
+      "Bash(curl -s -o /tmp/h.html -w 'code=%{http_code}\\\\n' http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https')",
+      "Bash(bin/magento cache:flush)",
+      "Bash(curl -s -o /tmp/h.html http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https')"
+    ]
+  }
+}
