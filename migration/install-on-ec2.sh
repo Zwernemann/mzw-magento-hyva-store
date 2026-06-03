@@ -21,8 +21,8 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/var/www/magento}"
 DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_NAME="${DB_NAME:-magento}"
-DB_USER="${DB_USER:-magento}"
-DB_PASS="${DB_PASS:-}"                       # if empty, a strong one is generated
+DB_USER="${DB_USER:-magento}"                # DEDICATED app user — NOT your personal admin/root account
+DB_PASS="${DB_PASS:-}"                       # if empty, a strong one is generated (only for a brand-new user)
 BASE_URL="${BASE_URL:-}"                     # e.g. http://1.2.3.4/  (required)
 SEARCH_ENGINE="${SEARCH_ENGINE:-opensearch}" # opensearch | elasticsearch8
 SEARCH_HOST="${SEARCH_HOST:-localhost}"      # hostname only, no scheme (e.g. xxx.aivencloud.com)
@@ -45,8 +45,13 @@ Environment variables (all optional except BASE_URL):
   BASE_URL=http://1.2.3.4/     Public URL of the shop (REQUIRED)
   DB_HOST=127.0.0.1            MariaDB host
   DB_NAME=magento             Database name (created if missing)
-  DB_USER=magento             Database user (created if missing)
-  DB_PASS=...                 DB user password (auto-generated if unset)
+  DB_USER=magento             Dedicated app DB user (created if missing).
+                              Use a migration-specific name, NOT your personal
+                              admin user — a pre-existing '<user>'@'%' account is
+                              left untouched (never shadowed or password-reset).
+  DB_PASS=...                 DB user password. Auto-generated only for a brand-
+                              new user; if the user already exists you MUST pass
+                              its existing password.
   RUN_USER=apache             OS user that owns the files & runs bin/magento (apache/nginx/magento)
   FILE_GROUP=apache           Group owner of the files (defaults to RUN_USER)
   SEARCH_ENGINE=opensearch    External search engine: opensearch | elasticsearch8
@@ -172,22 +177,67 @@ ok "Code extracted"
 
 # --------------------------------------------------------------- database ----
 say "Setting up database '$DB_NAME'"
-if [[ -z "$DB_PASS" ]]; then
-  DB_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
-  warn "No DB_PASS given — generated one (saved into env.php below)."
-fi
 # Use socket/root auth for DDL. On a fresh AL2023 MariaDB, root uses unix_socket.
 MYSQL_ROOT=( $SUDO mysql )
+
+# Which host the app account is scoped to MUST match how the app connects:
+#   DB_HOST=localhost        -> PDO/mysql use the unix socket -> account host 'localhost'
+#   DB_HOST=127.0.0.1 / <ip> -> TCP                           -> account host = that value
+# We create exactly ONE account (the one Magento actually uses), never a
+# localhost + 127.0.0.1 pair. Fewer accounts = fewer ways to silently "shadow"
+# a broader account on local connections.
+if [[ "$DB_HOST" == "localhost" ]]; then
+  GRANT_HOST="localhost"
+else
+  GRANT_HOST="127.0.0.1"
+fi
+
+# The database itself is always safe to create idempotently. Pin the collation
+# explicitly so the result is deterministic across MariaDB versions.
 "${MYSQL_ROOT[@]}" <<SQL
-CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4;
-CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
-CREATE USER IF NOT EXISTS '$DB_USER'@'127.0.0.1' IDENTIFIED BY '$DB_PASS';
-ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
-ALTER USER '$DB_USER'@'127.0.0.1' IDENTIFIED BY '$DB_PASS';
-GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost';
-GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'127.0.0.1';
-FLUSH PRIVILEGES;
+CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 SQL
+
+# SAFETY — this block must NEVER damage a pre-existing DB account.
+# Two specific footguns we refuse to fire:
+#   1. Resetting an existing account's password (an unconditional ALTER USER
+#      would clobber it on every run).
+#   2. Creating a narrow, host-specific account that SHADOWS an existing
+#      wildcard account ('$DB_USER'@'%') for local connections — that is exactly
+#      how an admin user silently loses its privileges locally.
+# If '$DB_USER'@'%' already exists we treat it as pre-provisioned: leave it 100%
+# untouched and only make sure it can reach this database. DB_PASS must then be
+# that account's existing password so the env.php we write is correct.
+WILDCARD_EXISTS="$("${MYSQL_ROOT[@]}" -N -e \
+  "SELECT COUNT(*) FROM mysql.user WHERE user='$DB_USER' AND host='%';" 2>/dev/null || echo 0)"
+
+if [[ "$WILDCARD_EXISTS" != "0" ]]; then
+  warn "User '$DB_USER'@'%' already exists — reusing it UNTOUCHED (no password reset,"
+  warn "no host-specific shadow account). DB_PASS must match that account's password."
+  [[ -z "$DB_PASS" ]] && die "'$DB_USER'@'%' already exists — pass its DB_PASS so env.php matches (refusing to reset an existing account's password)."
+  "${MYSQL_ROOT[@]}" <<SQL
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%';
+SQL
+else
+  # Fresh, dedicated, least-surprise app account scoped to this one DB and host.
+  HOST_EXISTS="$("${MYSQL_ROOT[@]}" -N -e \
+    "SELECT COUNT(*) FROM mysql.user WHERE user='$DB_USER' AND host='$GRANT_HOST';" 2>/dev/null || echo 0)"
+  if [[ "$HOST_EXISTS" != "0" ]]; then
+    # Account already there from a prior run: leave its password alone.
+    [[ -z "$DB_PASS" ]] && die "'$DB_USER'@'$GRANT_HOST' already exists — pass its DB_PASS so env.php matches (refusing to reset an existing account's password)."
+    warn "User '$DB_USER'@'$GRANT_HOST' already exists — leaving its password unchanged."
+  elif [[ -z "$DB_PASS" ]]; then
+    DB_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+    warn "No DB_PASS given — generated one (saved into env.php below)."
+  fi
+  # CREATE ... IF NOT EXISTS is idempotent and NEVER overwrites an existing
+  # password, so a re-run is safe. (No unconditional ALTER USER, no FLUSH
+  # PRIVILEGES — GRANT/CREATE update the in-memory grants immediately.)
+  "${MYSQL_ROOT[@]}" <<SQL
+CREATE USER IF NOT EXISTS '$DB_USER'@'$GRANT_HOST' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'$GRANT_HOST';
+SQL
+fi
 ok "Database + user ready"
 
 # Collation compatibility: the dump came from MariaDB 11.4 (utf8mb4_uca1400_*).

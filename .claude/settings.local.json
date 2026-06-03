@@ -14,7 +14,10 @@
       "Bash(curl -s -o /tmp/h.html -w 'code=%{http_code} size=%{size_download}\\\\n' http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https' -H 'X-Forwarded-For: 127.0.0.1')",
       "Bash(curl -s -o /tmp/h.html -w 'code=%{http_code}\\\\n' http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https')",
       "Bash(bin/magento cache:flush)",
-      "Bash(curl -s -o /tmp/h.html http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https')"
+      "Bash(curl -s -o /tmp/h.html http://nginx:8000/ -H 'Host: __TRACKED_VAR__' -H 'X-Forwarded-Proto: https')",
+      "Bash(bash -n install-on-ec2.sh)",
+      "Bash(bash -n magento-export.sh)",
+      "Bash(bash -n gen-export.sh)"
     ]
   }
 }
