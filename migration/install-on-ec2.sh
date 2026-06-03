@@ -30,7 +30,7 @@ SEARCH_PORT="${SEARCH_PORT:-9200}"
 SEARCH_SCHEME="${SEARCH_SCHEME:-http}"       # http | https  (managed/Aiven = https)
 SEARCH_USER="${SEARCH_USER:-}"               # auth username (managed OpenSearch)
 SEARCH_PASS="${SEARCH_PASS:-}"               # auth password
-SEARCH_CA_CERT="${SEARCH_CA_CERT:-}"         # path to a CA cert (e.g. Aiven ca.pem) to add to the trust store
+SEARCH_CA_CERT="${SEARCH_CA_CERT:-}"         # OPTIONAL fallback: CA cert to trust, only for endpoints with a PRIVATE CA (Aiven uses a public cert — leave empty)
 SEARCH_INDEX_PREFIX="${SEARCH_INDEX_PREFIX:-}" # optional OpenSearch index prefix
 SEARCH_TLS_INSECURE="${SEARCH_TLS_INSECURE:-0}" # 1 = skip TLS verify in the reachability check ONLY
 RUN_USER="${RUN_USER:-apache}"               # OS user that OWNS the files & runs bin/magento (apache/nginx/magento)
@@ -55,7 +55,9 @@ Environment variables (all optional except BASE_URL):
   SEARCH_SCHEME=http          http | https  (managed services like Aiven use https)
   SEARCH_USER=                Auth username (managed OpenSearch)
   SEARCH_PASS=                Auth password
-  SEARCH_CA_CERT=             Path to a CA cert (e.g. Aiven ca.pem) added to the trust store
+  SEARCH_CA_CERT=             OPTIONAL: CA cert to trust — ONLY for a private-CA
+                              endpoint. Aiven uses a publicly-trusted cert, so
+                              leave this empty.
   SEARCH_INDEX_PREFIX=        Optional OpenSearch index prefix
 
 This installer NEVER installs a search engine — it points Magento at your
@@ -66,8 +68,9 @@ Example — managed OpenSearch on Aiven (files owned by magento:apache):
     RUN_USER=magento FILE_GROUP=apache \\
     SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \\
     SEARCH_HOST=xxx.aivencloud.com SEARCH_PORT=12345 \\
-    SEARCH_USER=avnadmin SEARCH_PASS=secret SEARCH_CA_CERT=./aiven-ca.pem \\
+    SEARCH_USER=avnadmin SEARCH_PASS=secret \\
     ./install-on-ec2.sh
+  # No CA cert needed — Aiven's certificate is trusted by the system CA bundle.
 EOF
 }
 
@@ -120,8 +123,9 @@ CURL_OPTS=(-s -m 6)
 search_banner()    { curl "${CURL_OPTS[@]}" "$SEARCH_URL" 2>/dev/null; }
 search_reachable() { curl "${CURL_OPTS[@]}" -o /dev/null "$SEARCH_URL" 2>/dev/null; }
 
-# Add a CA cert (e.g. Aiven's project CA) to the OS trust store so BOTH curl
-# and Magento's PHP/curl client validate the managed endpoint's TLS cert.
+# OPTIONAL: only when the endpoint uses a PRIVATE CA. Adds the cert to the OS
+# trust store so both curl and Magento's PHP/curl client validate TLS. Not
+# needed for Aiven (publicly-trusted cert) — skipped entirely when unset.
 if [[ -n "$SEARCH_CA_CERT" ]]; then
   say "Adding CA cert to system trust store ($SEARCH_CA_CERT)"
   $SUDO cp "$SEARCH_CA_CERT" /etc/pki/ca-trust/source/anchors/magento-search-ca.pem
@@ -149,7 +153,7 @@ else
   warn "Search engine NOT reachable at $SEARCH_URL — Magento 2.4 cannot run without it."
   echo "    Check: host/port, SEARCH_USER/PASS, firewall/security-group, and TLS."
   [[ "$SEARCH_SCHEME" == "https" && -z "$SEARCH_CA_CERT" ]] && \
-    echo "    HTTPS without SEARCH_CA_CERT — if the cert is from a private CA (Aiven), pass SEARCH_CA_CERT=./ca.pem."
+    echo "    Note: most managed endpoints (e.g. Aiven) use publicly-trusted certs and need NO CA cert. Only if yours uses a private CA, pass SEARCH_CA_CERT=./ca.pem."
   die "Aborting: make the external search endpoint reachable, then re-run."
 fi
 

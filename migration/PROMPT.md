@@ -34,10 +34,10 @@ Hard constraints / environment facts (these are NON-NEGOTIABLE):
   SEPARATE managed OpenSearch as an EXTERNAL service (Aiven, over HTTPS with
   username/password). The installer must point Magento at that external endpoint
   and ONLY verify reachability — never install or start a local search engine.
-  Note Magento's OpenSearch client verifies TLS against the system trust store
-  with no override, so support adding a CA cert (Aiven project CA) via
-  update-ca-trust. Magento reads the protocol from the hostname, so store the
-  scheme with it (https://...).
+  Magento reads the protocol from the hostname, so store the scheme with it
+  (https://...). Aiven's cert is publicly trusted, so no CA cert is needed;
+  still expose an OPTIONAL CA-cert path (added via update-ca-trust) as a
+  fallback for endpoints that use a private CA.
 - Ship vendor/ inside the bundle so the EC2 needs NO composer run and NO
   Hyvä/Magento auth credentials. Never ask me for those credentials.
 - Preserve the crypt key from the source env.php so encrypted DB values still

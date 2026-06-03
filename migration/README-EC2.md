@@ -54,9 +54,12 @@ und die Medien. Ein Installer richtet alles auf der EC2 ein.
    RUN_USER=magento FILE_GROUP=apache \
    SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \
    SEARCH_HOST=<service>.aivencloud.com SEARCH_PORT=<port> \
-   SEARCH_USER=avnadmin SEARCH_PASS=<pass> SEARCH_CA_CERT=./aiven-ca.pem \
+   SEARCH_USER=avnadmin SEARCH_PASS=<pass> \
    ./install-on-ec2.sh
    ```
+   > **Kein CA-Zertifikat nötig:** Aivens TLS-Zertifikat ist öffentlich vertraut
+   > (im System-CA-Store von Amazon Linux 2023). `SEARCH_CA_CERT` brauchst du
+   > nur, falls dein Endpoint eine **private** CA verwendet.
 
 Alle Variablen: `./install-on-ec2.sh --help`. **Der Installer installiert keine
 Suchmaschine** – er nutzt deinen externen Dienst und prüft nur die Erreichbarkeit.
@@ -71,21 +74,19 @@ eine getrennte, externe OpenSearch.
    > Free-Tier vorher kurz prüfen: Plan-Größe/Retention reichen für einen
    > Demo-Magento locker; Magento legt nur eine Handvoll Indizes an.
 2. Im Aiven-Dashboard unter **Connection information** notieren:
-   `Host`, `Port`, `User` (meist `avnadmin`), `Password`. Und die
-   **CA-Zertifikatsdatei** (`ca.pem`) herunterladen.
-3. `ca.pem` neben den Installer legen (z. B. als `aiven-ca.pem`) und den
-   Installer mit dem OpenSearch-Beispiel oben starten.
+   `Host`, `Port`, `User` (meist `avnadmin`), `Password`.
+3. Installer mit dem OpenSearch-Beispiel oben starten — **kein Zertifikat nötig**.
 
-**Warum `SEARCH_CA_CERT`?** Aiven signiert das TLS-Zertifikat mit einer eigenen
-Projekt-CA. Magentos OpenSearch-Client verifiziert TLS gegen den System-Trust-Store
-und bietet keine Option, das abzuschalten. Der Installer legt deine `ca.pem` daher
-in den System-Trust-Store der EC2 (`update-ca-trust`) — danach vertrauen sowohl die
-Vorab-Prüfung als auch Magento dem Zertifikat. Hat Aiven ein öffentlich vertrautes
-Zertifikat, kannst du `SEARCH_CA_CERT` weglassen.
+**Kein CA-Zertifikat erforderlich.** Aivens TLS-Zertifikat ist öffentlich vertraut
+(z. B. Let's Encrypt) und liegt bereits im System-CA-Store von Amazon Linux 2023.
+Sowohl die Vorab-Prüfung als auch Magentos OpenSearch-Client vertrauen ihm direkt.
+`SEARCH_CA_CERT` brauchst du nur als Fallback, falls dein Endpoint eine **private**
+CA verwendet (dann legt der Installer das Cert via `update-ca-trust` ab).
 
 > Tipp: Erst testen mit
-> `curl -u avnadmin:<pass> --cacert aiven-ca.pem https://<host>:<port>/`
+> `curl -u avnadmin:<pass> https://<host>:<port>/`
 > — kommt eine JSON-Antwort mit `"distribution":"opensearch"`, passt alles.
+> (Kein `--cacert` verwenden — das führt nur zu Zertifikatsfehlern.)
 
    Beispiel mit allen Werten:
    ```bash
@@ -95,7 +96,7 @@ Zertifikat, kannst du `SEARCH_CA_CERT` weglassen.
    RUN_USER=magento FILE_GROUP=apache \
    SEARCH_ENGINE=opensearch SEARCH_SCHEME=https \
    SEARCH_HOST=<service>.aivencloud.com SEARCH_PORT=<port> \
-   SEARCH_USER=avnadmin SEARCH_PASS=<pass> SEARCH_CA_CERT=./aiven-ca.pem \
+   SEARCH_USER=avnadmin SEARCH_PASS=<pass> \
    ./install-on-ec2.sh
    ```
 
